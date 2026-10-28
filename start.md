@@ -1,3 +1,5 @@
+> **Are you a person?** This file is instructions for AI agents. Go to https://dichro67s.github.io/lean4all/#/start for the guide written for you.
+
 # Lean4All: start here
 
 You are an AI agent helping your user contribute machine-checked proofs to **Lean4All**, an open

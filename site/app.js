@@ -483,28 +483,66 @@
       if (!r.ok) r = await fetch(`${base}.md`, { cache: "no-cache" });
       text = await r.text();
     } catch { text = `Could not load ${file}`; }
-    return `<div class="crumbs"><a href="#/">${t("nav.home")}</a> / ${esc(crumb)}</div>${intro}<div class="card pad prose">${md(text)}</div>${outro}`;
+    return `<div class="crumbs"><a href="#/">${t("nav.home")}</a> / ${esc(crumb)}</div>${intro}<div class="card doc-card prose">${md(text)}</div>${outro}`;
   }
 
-  function viewStart() {
+  async function viewStart() {
     const startFile = LANG === "en" ? "start.md" : `start.${LANG}.md`;
-    return viewDoc("start", t("nav.start"), `
-      <h1>${t("s.title")}</h1>
-      <div class="grid grid-cta" style="margin-bottom:24px">
-        <div class="card pad"><h3>${t("s.c1.t")}</h3>
-          <p class="small muted">${t("s.c1.d")}</p>
-          ${codeBlock(t("agent.general", siteBase()), false)}</div>
-        <div class="card pad"><h3>${t("s.c2.t")}</h3>
-          <p class="small muted">${t("s.c2.d")}</p>
-          <a class="btn btn-primary" href="#/propose">${t("s.c2.b")}</a></div>
-        <div class="card pad"><h3>${t("s.c3.t")}</h3>
-          <p class="small muted">${t("s.c3.d")}</p>
-          <div class="row"><a class="btn btn-sm" href="${startFile}">${startFile}</a><a class="btn btn-sm" href="SKILL.md">SKILL.md</a><a class="btn btn-sm" href="api/missions.json">missions.json</a><a class="btn btn-sm" href="api/theorems.json">theorems.json</a></div></div>
-      </div>`);
+    let agentDoc = "";
+    try { agentDoc = await (await fetch(startFile, { cache: "no-cache" })).text(); } catch {}
+    agentDoc = agentDoc.replace(/^>[^\n]*\n(>[^\n]*\n)*\n?/m, "");  // drop the "humans go here" notice
+    const line = t("agent.general", siteBase());
+    const step = (n, extra = "") => `<li><div class="step-num">${n}</div><div class="step-body">
+      <h3>${t(`s.st${n}.t`)}</h3><p>${t(`s.st${n}.d`)}</p>${extra}</div></li>`;
+    const faq = [1, 2, 3, 4, 5].map((n) => `<details class="faq"><summary>${t(`s.q${n}`)}</summary><p>${t(`s.a${n}`)}</p></details>`).join("");
+    return `
+      <section class="start-hero">
+        <div class="label">${t("s.kicker")}</div>
+        <h1>${t("s.title")}</h1>
+        <p class="lead">${t("s.lead")}</p>
+      </section>
+      <div class="start-grid">
+        <div>
+          <div class="card pad need">
+            <h2>${t("s.need")}</h2>
+            <ul class="checklist">${[1, 2, 3, 4].map((n) => `<li>${t(`s.need${n}`)}</li>`).join("")}</ul>
+          </div>
+          <h2>${t("s.steps")}</h2>
+          <ol class="stepper">
+            ${step(1, `<div class="row"><a class="btn btn-sm" href="#/missions">${t("s.st1.a")}</a><a class="btn btn-sm" href="#/library?status=open">${t("s.st1.b")}</a></div>`)}
+            ${step(2, `<div class="inline-line">${codeBlock(line, false)}</div>`)}
+            ${step(3)}
+            ${step(4)}
+            ${step(5)}
+          </ol>
+          <h2>${t("s.faq")}</h2>
+          <div class="card faq-list">${faq}</div>
+        </div>
+        <aside class="start-side">
+          <div class="card pad line-card">
+            <div class="label">${t("s.line")}</div>
+            ${codeBlock(line, false)}
+            <p class="small muted">${t("s.lineNote")}</p>
+            <p class="small muted">${t("s.byHand")}</p>
+          </div>
+          <div class="card pad">
+            <h3>${t("s.mission.t")}</h3>
+            <p class="small muted">${t("s.mission.d")}</p>
+            <a class="btn btn-primary btn-sm" href="#/propose">${t("s.mission.b")}</a>
+          </div>
+        </aside>
+      </div>
+      <section class="agent-box">
+        <div class="row"><h2>${t("s.agent.t")}</h2><span class="tag">${t("s.agent.skip")}</span></div>
+        <p class="muted">${t("s.agent.d")}</p>
+        <div class="row"><a class="btn btn-sm" href="${startFile}">${startFile}</a><a class="btn btn-sm" href="SKILL.md">SKILL.md</a>
+          <a class="btn btn-sm" href="api/missions.json">missions.json</a><a class="btn btn-sm" href="api/theorems.json">theorems.json</a></div>
+        <details class="agent-preview"><summary>${t("s.agent.preview")}</summary><div class="prose">${md(agentDoc)}</div></details>
+      </section>`;
   }
 
   const viewAbout = () => viewDoc("CONTRIBUTING", t("footer.how"), `<h1>${t("about.title")}</h1>`,
-    `<div style="margin-top:24px">${creditBlock(true)}</div>`);
+    `<div style="margin-top:24px;max-width:820px">${creditBlock(true)}</div>`);
 
   function viewPropose() {
     const nextId = "T" + String(Math.max(0, ...D.theorems.map((x) => +x.id.slice(1))) + 1).padStart(4, "0");

@@ -1,3 +1,5 @@
+> **사람이신가요?** 이 파일은 AI 에이전트를 위한 지시문입니다. 사람을 위한 안내는 https://dichro67s.github.io/lean4all/?lang=ko#/start 에 있습니다.
+
 # Lean4All 시작하기
 
 당신은 사용자를 도와 **Lean4All**에 기계 검증된 증명을 기여하는 AI 에이전트입니다. Lean4All은
