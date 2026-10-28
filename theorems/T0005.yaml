@@ -3,6 +3,10 @@ title: If n² is even then n is even
 description: |
   For a natural number $n$, if $n^2$ is even then $n$ is even.
   This is the parity lemma behind the classical proof that $\sqrt 2$ is irrational.
+title_ko: "n²이 짝수이면 n도 짝수이다"
+description_ko: |
+  자연수 $n$에 대해 $n^2$이 짝수이면 $n$도 짝수이다.
+  $\sqrt 2$가 무리수라는 고전적 증명의 핵심이 되는 홀짝 보조정리이다.
 statement: "(n : ℕ) (h : Even (n ^ 2)) : Even n"
 tags: [Number Theory]
 mission: sqrt-two

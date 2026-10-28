@@ -2,6 +2,9 @@ id: T0004
 title: √2 is irrational
 description: |
   The real number $\sqrt{2}$ is not a quotient of two integers.
+title_ko: "√2는 무리수이다"
+description_ko: |
+  실수 $\sqrt{2}$는 두 정수의 비로 나타낼 수 없다.
 statement: ": Irrational (Real.sqrt 2)"
 tags: [Number Theory, Real Analysis]
 source: Classical (attributed to the Pythagoreans)

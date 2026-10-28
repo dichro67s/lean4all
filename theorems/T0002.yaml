@@ -3,6 +3,10 @@ title: n! + 1 has a prime factor
 description: |
   For every $n$, the number $n! + 1$ is divisible by some prime $p$.
   Since $n! + 1 \ge 2$, it is not a unit.
+title_ko: "n! + 1은 소인수를 가진다"
+description_ko: |
+  모든 $n$에 대해 $n! + 1$을 나누는 소수 $p$가 존재한다.
+  $n! + 1 \ge 2$이므로 단원(unit)이 아니다.
 statement: "(n : ℕ) : ∃ p, Nat.Prime p ∧ p ∣ Nat.factorial n + 1"
 tags: [Number Theory]
 source: Euclid, Elements IX.20 (step 1)

@@ -3,6 +3,10 @@ title: Nicomachus's theorem
 description: |
   The sum of the first $n$ cubes is the square of the $n$-th triangular number:
   $$\sum_{i=0}^{n} i^3 = \Big(\sum_{i=0}^{n} i\Big)^2.$$
+title_ko: "니코마코스의 정리"
+description_ko: |
+  처음 $n$개 세제곱의 합은 $n$번째 삼각수의 제곱과 같다:
+  $$\sum_{i=0}^{n} i^3 = \Big(\sum_{i=0}^{n} i\Big)^2.$$
 statement: "(n : ℕ) : ∑ i ∈ Finset.range (n + 1), i ^ 3 = (∑ i ∈ Finset.range (n + 1), i) ^ 2"
 tags: [Combinatorics, Algebra]
 source: Nicomachus of Gerasa, Introduction to Arithmetic (c. 100 CE)

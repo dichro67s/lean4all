@@ -1,24 +1,35 @@
 id: euclid-primes
-title: "Euclid's Theorem: There Are Infinitely Many Primes"
+title: 'Euclid''s Theorem: There Are Infinitely Many Primes'
+title_ko: '유클리드의 정리: 소수는 무한히 많다'
 type: Textbook
-tags: [Number Theory]
+tags:
+- Number Theory
 captain: dichro67s
 reviewed: true
 summary: Formalize Euclid's proof that the primes never run out, through the n! + 1 argument.
+summary_ko: n! + 1 논법으로 소수가 끝없이 존재함을 보인 유클리드의 증명을 형식화합니다.
 description: |
   Euclid's argument: given $n$, every prime factor $p$ of $n! + 1$ must be larger than $n$,
   because every number up to $n$ divides $n!$.
 
   The goal has been **sketched**: its proof reduces to the two milestones. Once both
   milestones are proved, the goal resolves automatically.
+description_ko: |-
+  유클리드의 논법: 임의의 $n$에 대해, $n!$은 $n$ 이하의 모든 수로 나누어떨어지므로 $n! + 1$의 소인수 $p$는 반드시 $n$보다 커야 합니다.
+
+  목표 정리는 **스케치** 상태입니다. 증명이 두 마일스톤으로 환원되어 있어서, 두 마일스톤이 모두 증명되면 목표도 자동으로 완성됩니다.
 source:
   title: Euclid, Elements, Book IX, Proposition 20
   url: https://mathcs.clarku.edu/~djoyce/java/elements/bookIX/propIX20.html
 goal: T0001
 milestones:
-  - title: n! + 1 has a prime factor
-    statement: "For every $n$ there is a prime $p$ with $p \\mid n! + 1$."
-    theorem: T0002
-  - title: That prime factor is larger than n
-    statement: "If $p$ is prime and $p \\mid n! + 1$, then $n < p$."
-    theorem: T0003
+- title: n! + 1 has a prime factor
+  statement: For every $n$ there is a prime $p$ with $p \mid n! + 1$.
+  theorem: T0002
+  title_ko: n! + 1은 소인수를 가진다
+  statement_ko: 모든 $n$에 대해 $p \mid n! + 1$인 소수 $p$가 존재한다.
+- title: That prime factor is larger than n
+  statement: If $p$ is prime and $p \mid n! + 1$, then $n < p$.
+  theorem: T0003
+  title_ko: 그 소인수는 n보다 크다
+  statement_ko: $p$가 소수이고 $p \mid n! + 1$이면 $n < p$이다.

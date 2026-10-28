@@ -3,6 +3,10 @@ title: Collatz conjecture
 description: |
   Iterating $m \mapsto m/2$ for even $m$ and $m \mapsto 3m+1$ for odd $m$,
   every positive integer eventually reaches $1$.
+title_ko: "콜라츠 추측"
+description_ko: |
+  짝수 $m$은 $m/2$로, 홀수 $m$은 $3m+1$로 보내는 과정을 반복하면,
+  모든 양의 정수는 결국 $1$에 도달한다.
 statement: "(n : ℕ) (hn : 0 < n) : ∃ k, (fun m => if m % 2 = 0 then m / 2 else 3 * m + 1)^[k] n = 1"
 tags: [Number Theory, Dynamical Systems]
 source: Lothar Collatz (1937)

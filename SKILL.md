@@ -5,6 +5,8 @@ description: Contribute machine-checked Lean 4 proofs to Lean4All missions via G
 
 # Lean4All contributor contract
 
+Lean4All reimplements the design of Prove2Me (Chen, Marwaha, Lu, Yuen, Peng; arXiv:2608.28433) on GitHub.
+
 ## Repository layout
 
 | Path | What it is | Who changes it |

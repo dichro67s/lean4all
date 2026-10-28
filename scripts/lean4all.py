@@ -52,7 +52,7 @@ STMT_COMMAND = re.compile(
     r"set_option|variable|universe|noncomputable|private|protected|@\[)\b"
 )
 STD_AXIOMS = ["propext", "Classical.choice", "Quot.sound"]
-CARD_FIELDS = {"id", "title", "description", "preamble", "statement", "tags", "source", "mission",
+CARD_FIELDS = {"id", "title", "title_ko", "description", "description_ko", "preamble", "statement", "tags", "source", "mission",
                "proposer", "created"}
 FORMAL_FIELDS = ("id", "preamble", "statement")
 
@@ -608,6 +608,7 @@ def site(lean: bool) -> None:
         created = git_dates(f"theorems/{tid}.yaml")[0] or str(card.get("created") or now)
         t = {
             "id": tid, "title": card.get("title", tid), "description": card.get("description", ""),
+            "title_ko": card.get("title_ko"), "description_ko": card.get("description_ko"),
             "preamble": preamble_of(card), "statement": (card.get("statement") or "").strip(),
             "lean": f"{preamble_of(card)}\n\n{lean_signature(card, tid)} := by\n  sorry",
             "template": solution_template(card), "tags": card.get("tags") or [],
@@ -653,8 +654,9 @@ def site(lean: bool) -> None:
                    [by_id[x]["created"] for x in members] or [now])
         created = git_dates(f"missions/{mid}.yaml")[0] or str(m.get("created") or now)
         mission_list.append({
-            **{k: m.get(k) for k in ("id", "title", "type", "tags", "captain", "summary",
-                                    "description", "source", "goal", "reviewed")},
+            **{k: m.get(k) for k in ("id", "title", "title_ko", "type", "tags", "captain", "summary",
+                                    "summary_ko", "description", "description_ko", "source", "goal",
+                                    "reviewed")},
             "milestones": ms, "theorems": members, "created": created, "updated": last,
             "completed": goal_status in ("proved", "disproved"), "goal_status": goal_status,
             "contributors": sorted(p for p in people if p),
@@ -706,6 +708,7 @@ def site(lean: bool) -> None:
     stamp = re.sub(r"\D", "", now)[:14]  # cache-bust app.css / app.js on every build
     index = (SITE_OUT / "index.html").read_text(encoding="utf-8")
     index = index.replace('href="app.css"', f'href="app.css?v={stamp}"')
+    index = index.replace('src="i18n.js"', f'src="i18n.js?v={stamp}"')
     (SITE_OUT / "index.html").write_text(index.replace('src="app.js"', f'src="app.js?v={stamp}"'))
     api = SITE_OUT / "api"
     (api / "theorems").mkdir(parents=True)
@@ -720,7 +723,7 @@ def site(lean: bool) -> None:
         (api / "theorems" / f"{t['id']}.json").write_text(json.dumps(t, ensure_ascii=False))
     for m in mission_list:
         (api / "missions" / f"{m['id']}.json").write_text(json.dumps(m, ensure_ascii=False))
-    for doc in ("start.md", "SKILL.md", "CONTRIBUTING.md"):
+    for doc in ("start.md", "start.ko.md", "SKILL.md", "CONTRIBUTING.md", "CONTRIBUTING.ko.md"):
         shutil.copy(ROOT / doc, SITE_OUT / doc)
     (SITE_OUT / ".nojekyll").write_text("")
     print(f"site written to {SITE_OUT.relative_to(ROOT)}/ — {counts}")

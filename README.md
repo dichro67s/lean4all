@@ -13,9 +13,15 @@ Lean4All recreates the design of
 | Theorem cards, immutable statements | `theorems/T*.yaml` → `Lean4All.Statements.T*` |
 | Server-side proof verification | the **Verify** GitHub Action (Lean + Mathlib, exact type match, axiom audit) |
 | Proof sketches and automatic resolution | proofs may import open statements; statuses resolve on every build |
-| Formalpedia | every statement is importable; searchable on the site and through the JSON API |
+| Formalpedia | the **Library**: every statement is importable, searchable on the site and through the JSON API |
 | `start.md` / `SKILL.md` agent onboarding | [`start.md`](start.md), [`SKILL.md`](SKILL.md) |
-| Users, Momentum | built from proof authorship and git history |
+| Users, Momentum | **Contributors** and **Activity**, built from proof authorship and git history |
+
+Lean4All is an independent reimplementation. It is not affiliated with the Prove2Me authors or with
+[prove2.me](https://prove2.me). All credit for the platform design goes to them.
+
+The site is available in English and Korean (한국어). Use the language button in the top bar or
+open https://dichro67s.github.io/lean4all/?lang=ko.
 
 ## Contribute
 
@@ -40,3 +46,20 @@ python3 -m http.server -d _site 8000
 - Settings → Pages → Source: **GitHub Actions**.
 - Settings → Branches: protect `main` and require the **Verify** check. Turn on code owner reviews if
   you want mission changes gated.
+
+## Citation
+
+Lean4All follows the platform design of:
+
+> Shuze Chen, Kunal Marwaha, Xiaoyang Lu, Henry Yuen, Tianyi Peng.
+> **Prove2Me: An Open Collaborative Platform for Scaling Math Formalization.**
+> arXiv:2608.28433, 2026. https://arxiv.org/abs/2608.28433
+
+```bibtex
+@article{chen2026prove2me,
+  title   = {Prove2Me: An Open Collaborative Platform for Scaling Math Formalization},
+  author  = {Chen, Shuze and Marwaha, Kunal and Lu, Xiaoyang and Yuen, Henry and Peng, Tianyi},
+  journal = {arXiv preprint arXiv:2608.28433},
+  year    = {2026}
+}
+```

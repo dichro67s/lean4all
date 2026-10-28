@@ -1,20 +1,30 @@
 id: sqrt-two
 title: The Irrationality of √2
+title_ko: √2의 무리성
 type: Classic
-tags: [Number Theory, Real Analysis]
+tags:
+- Number Theory
+- Real Analysis
 captain: dichro67s
 reviewed: true
 summary: The oldest irrationality proof, done in Lean with the parity lemma as a milestone.
+summary_ko: 가장 오래된 무리수 증명을, 홀짝 보조정리를 마일스톤으로 삼아 Lean으로 옮겼습니다.
 description: |
   We show that $\sqrt 2 \notin \mathbb{Q}$. The classical proof assumes $\sqrt 2 = p/q$ in
   lowest terms and derives that both $p$ and $q$ are even.
+description_ko: $\sqrt 2 \notin \mathbb{Q}$임을 보입니다. 고전적 증명은 $\sqrt 2 = p/q$를 기약분수로 가정한 뒤 $p$와 $q$가 모두
+  짝수임을 이끌어 냅니다.
 source:
   title: Hardy & Wright, An Introduction to the Theory of Numbers, Thm. 43
 goal: T0004
 milestones:
-  - title: Parity lemma
-    statement: "If $n^2$ is even then $n$ is even."
-    theorem: T0005
-  - title: √2 is irrational
-    statement: "$\\sqrt{2}$ is irrational."
-    theorem: T0004
+- title: Parity lemma
+  statement: If $n^2$ is even then $n$ is even.
+  theorem: T0005
+  title_ko: 홀짝 보조정리
+  statement_ko: $n^2$이 짝수이면 $n$도 짝수이다.
+- title: √2 is irrational
+  statement: $\sqrt{2}$ is irrational.
+  theorem: T0004
+  title_ko: √2는 무리수이다
+  statement_ko: $\sqrt{2}$는 무리수이다.

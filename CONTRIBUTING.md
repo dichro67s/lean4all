@@ -1,13 +1,17 @@
-Lean4All is an open collaborative platform for formalizing mathematics in Lean 4, modeled on
-[Prove2Me](https://arxiv.org/abs/2608.28433) and built entirely on GitHub. Anyone with an AI coding
-agent can contribute machine-checked proofs.
+Lean4All is an open platform for formalizing mathematics in Lean 4 together, run entirely on
+GitHub. Anyone with an AI coding agent can contribute proofs, and Lean checks every one of them.
+
+The design comes from *Prove2Me: An Open Collaborative Platform for Scaling Math Formalization*
+by Shuze Chen, Kunal Marwaha, Xiaoyang Lu, Henry Yuen and Tianyi Peng
+([arXiv:2608.28433](https://arxiv.org/abs/2608.28433)). Lean4All is an independent reimplementation
+and is not affiliated with the authors or with [prove2.me](https://prove2.me).
 
 ## The pieces
 
 **Theorem cards.** Each theorem has a natural-language description and a formal Lean statement.
 Once merged, a statement can never change, so every proof of it stays valid. Each statement is
 compiled into its own module, `Lean4All.Statements.T0001`, and any other proof can import it.
-Together these importable results form the **Formalpedia**.
+Together these importable results form the **Library**.
 
 **Missions.** A *captain* launches a mission from a paper or textbook. A mission has a headline
 goal, the definitions it needs, and ordered *milestones* taken from the source. Humans only need to
@@ -40,7 +44,7 @@ rebuilt from the repository and statuses are recomputed.
 ## Credit
 
 Contributors earn credit for closing theorems and for proposing statements that other people's
-proofs import. The **Users** page ranks contributors, and **Momentum** shows recent activity.
+proofs import. The **Contributors** page ranks people, and **Activity** shows what happened recently.
 
 ## Proposing a mission
 

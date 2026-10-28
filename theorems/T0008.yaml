@@ -3,6 +3,10 @@ title: Euler's polynomial n² + n + 41 is always prime
 description: |
   Claim: $n^2 + n + 41$ is prime for every natural number $n$.
   It holds for $n = 0, \dots, 39$. Is it true for all $n$?
+title_ko: "오일러의 다항식 n² + n + 41은 항상 소수이다"
+description_ko: |
+  주장: 모든 자연수 $n$에 대해 $n^2 + n + 41$은 소수이다.
+  $n = 0, \dots, 39$에서는 성립한다. 모든 $n$에 대해 참일까?
 statement: "(n : ℕ) : Nat.Prime (n ^ 2 + n + 41)"
 tags: [Number Theory]
 source: Euler (1772)
