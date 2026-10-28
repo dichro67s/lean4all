@@ -69,7 +69,9 @@ code, pre, .mono { font-family: var(--mono); font-size: 13px; }
 .topbar-inner { display: flex; align-items: center; gap: 20px; height: 60px; }
 .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; color: var(--text); font-size: 17px; }
 .brand:hover { text-decoration: none; }
-.logo { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; background: var(--accent); color: var(--accent-ink); font-family: var(--serif); }
+.logo { width: 30px; height: 30px; flex: none; }
+.wordmark { display: inline-flex; align-items: baseline; font: 700 21px/1 var(--serif); letter-spacing: -.01em; }
+.wm-forall { width: .8em; height: .88em; margin-left: .06em; color: var(--accent); transform: translateY(.04em); }
 .nav { display: flex; gap: 4px; flex: 1; }
 .nav a { color: var(--muted); padding: 6px 10px; border-radius: 8px; font-weight: 500; font-size: 14px; }
 .nav a:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }

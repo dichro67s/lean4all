@@ -146,7 +146,7 @@ window.L4A_I18N = {
 
   ko: {
     "nav.home": "홈", "nav.missions": "미션", "nav.library": "라이브러리",
-    "nav.contributors": "기여자", "nav.activity": "활동", "nav.start": "참여하기",
+    "nav.contributors": "증명자", "nav.activity": "활동", "nav.start": "참여하기",
     "nav.propose": "미션 제안", "lang.switch": "English",
     "footer.about": "Lean4All은 GitHub 위에서 운영됩니다. 미션과 증명은 저장소의 파일로 관리되고, 모든 증명은 CI에서 Lean으로 검증되며, 병합될 때마다 이 사이트가 다시 만들어집니다.",
     "footer.how": "작동 방식", "footer.api": "JSON API", "footer.inspired": "Prove2Me 기반",
@@ -165,7 +165,7 @@ window.L4A_I18N = {
 
     ago: (n, u) => `${n}${{ m: "분", h: "시간", d: "일" }[u]} 전`,
     theorems: (n) => `정리 ${n}개`,
-    contributors: (n) => `기여자 ${n}명`,
+    contributors: (n) => `증명자 ${n}명`,
     milestonesShort: (a, b) => `마일스톤 ${a}/${b}`,
     captainBy: (u) => `캡틴 @${u}`, reviewed: "✓ 검토 완료",
 
@@ -176,7 +176,7 @@ window.L4A_I18N = {
     "home.cta2.t": "미션 제안하기", "home.cta2.d": "논문을 목표 정리, 정의, 마일스톤 명제로 정리해 올리세요.",
     "home.cta3.t": "작동 방식", "home.cta3.d": "명제, 증명 스케치, 검증까지 모두 GitHub에서 이루어집니다.",
     "stat.missions": "미션", "stat.theorems": "정리", "stat.closed": "해결됨",
-    "stat.sketched": "스케치", "stat.open": "미해결", "stat.contributors": "기여자",
+    "stat.sketched": "스케치", "stat.open": "미해결", "stat.contributors": "증명자",
     "home.inProgress": "진행 중인 미션", "home.browse": "전체 보기 →",
     "home.completed": "완료된 미션", "home.latest": "최근 활동", "home.allActivity": "전체 기록 →",
     "home.noOpen": "진행 중인 미션이 없습니다.",
@@ -193,7 +193,7 @@ window.L4A_I18N = {
     "m.graphHelp": "화살표는 증명에서 그 증명이 가져다 쓰는 보조정리로 향합니다. 스케치 상태의 정리는 아래의 모든 정리가 증명되면 자동으로 완성됩니다.",
     "m.all": "이 미션의 정리", "m.captain": "캡틴", "m.source": "출처",
     "m.count": "정리 수", "m.launched": "시작", "m.last": "최근 활동",
-    "m.people": "기여자", "m.nobody": "아직 없음", "m.help": "참여하기",
+    "m.people": "증명자", "m.nobody": "아직 없음", "m.help": "참여하기",
     "m.oneLine": "에이전트에게 이 한 줄을 붙여 넣으세요:", "m.file": "GitHub에서 미션 파일 보기",
     "agent.mission": (base, id) => `${base}start.ko.md 를 읽고 Lean4All 미션 ${id}에 기여해 줘.`,
     "agent.theorem": (base, id) => `${base}start.ko.md 를 읽고 Lean4All의 정리 ${id}를 증명해 줘.`,
@@ -219,7 +219,7 @@ window.L4A_I18N = {
     "lib.lead": "플랫폼의 모든 명제입니다. 증명되었든 아니든, 어느 것이든 새 증명에 가져다 쓸 수 있습니다.",
     "lib.search": "명제, 설명, 태그 검색…", "lib.all": "전체", "lib.none": "조건에 맞는 정리가 없습니다.",
 
-    "u.title": "기여자",
+    "u.title": "증명자",
     "u.lead": "정리를 해결하거나, 다른 사람의 증명이 가져다 쓰는 명제를 제안하면 점수를 얻습니다.",
     "u.proved": "증명", "u.disproved": "반증", "u.sketches": "스케치", "u.proposed": "제안",
     "u.imported": "다른 사람이 재사용", "u.missions": "미션", "u.score": "점수",
@@ -250,7 +250,7 @@ window.L4A_I18N = {
     "s.st4.t": "공개되기 전에 승인하기",
     "s.st4.d": "에이전트는 풀 리퀘스트를 열기 전에 먼저 물어봅니다. 증명에 대한 짧은 설명을 읽어 보고 승인하세요.",
     "s.st5.t": "최종 판단은 Lean이 합니다",
-    "s.st5.d": "GitHub가 증명을 자동으로 다시 검사합니다. 통과하면 몇 분 안에 병합되고 기여자 페이지에 이름이 올라갑니다. 실패하면 풀 리퀘스트에 오류가 표시되므로 에이전트가 고칠 수 있습니다.",
+    "s.st5.d": "GitHub가 증명을 자동으로 다시 검사합니다. 통과하면 몇 분 안에 병합되고 증명자 페이지에 이름이 올라갑니다. 실패하면 풀 리퀘스트에 오류가 표시되므로 에이전트가 고칠 수 있습니다.",
     "s.line": "에이전트에 붙여 넣을 한 줄", "s.lineNote": "git과 GitHub를 쓸 수 있는 코딩 에이전트라면 무엇이든 됩니다.",
     "s.byHand": "Lean을 직접 쓰고 싶다면, 미해결 정리 페이지마다 수동 절차가 안내되어 있습니다.",
     "s.faq": "자주 묻는 질문",
