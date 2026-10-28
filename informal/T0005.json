@@ -1,0 +1,19 @@
+{
+  "id": "T0005",
+  "hash": "2b18ce3695a93310",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-28T21:39:46+00:00",
+  "en": "Let $n$ be a natural number. If $n^2$ is even, then $n$ is even.",
+  "ko": "$n$을 자연수라고 하자. $n^2$이 짝수이면 $n$도 짝수이다.",
+  "caveats_en": [
+    "The domain is $\\mathbb{N}$, which includes $0$; note that $0$ is considered even in Mathlib."
+  ],
+  "caveats_ko": [
+    "정의역은 $\\mathbb{N}$이며 $0$을 포함하고, Mathlib에서 $0$은 짝수로 간주된다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement exactly formalizes the human description: for any natural number n, if n^2 is even, then n is even.",
+    "note_ko": "Lean 문장은 인간 설명을 정확히 형식화합니다: 임의의 자연수 n에 대해, n^2이 짝수이면 n도 짝수입니다."
+  }
+}

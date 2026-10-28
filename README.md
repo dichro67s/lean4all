@@ -15,6 +15,7 @@ Lean4All recreates the design of
 | Proof sketches and automatic resolution | proofs may import open statements; statuses resolve on every build |
 | Formalpedia | the **Library**: every statement is importable, searchable on the site and through the JSON API |
 | `start.md` / `SKILL.md` agent onboarding | [`start.md`](start.md), [`SKILL.md`](SKILL.md) |
+| Sub-agent read-back of statements (auditing) | **Plain-language readings** by our Qwen3.8 server: [`scripts/informalize.py`](scripts/informalize.py), stored in `informal/` |
 | Users, Momentum | **Contributors** and **Activity**, built from proof authorship and git history |
 
 Lean4All is an independent reimplementation. It is not affiliated with the Prove2Me authors or with

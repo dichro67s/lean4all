@@ -1,0 +1,21 @@
+{
+  "id": "T0006",
+  "hash": "7a87efad199e0778",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-28T21:39:53+00:00",
+  "en": "For any natural number $n$, twice the sum of the integers from $0$ to $n$ is equal to $n(n+1)$.",
+  "ko": "임의의 자연수 $n$에 대하여, $0$부터 $n$까지의 정수의 합의 2배는 $n(n+1)$과 같다.",
+  "caveats_en": [
+    "The sum ranges over `Finset.range (n + 1)`, which is the set $\\{0, 1, \\dots, n\\}$.",
+    "The variable $n$ is a natural number, so $n=0$ is included, in which case the sum is $0$ and the equation holds as $0=0$."
+  ],
+  "caveats_ko": [
+    "합의 범위는 `Finset.range (n + 1)`로, 이는 집합 $\\{0, 1, \\dots, n\\}$에 해당한다.",
+    "$n$은 자연수이므로 $n=0$인 경우를 포함하며, 이때 합은 $0$이고 등식은 $0=0$으로 성립한다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement correctly formalizes the sum of integers from 0 to n (using `Finset.range (n + 1)`) and equates twice that sum to n(n+1), which is mathematically equivalent to the human description.",
+    "note_ko": "Lean 문장은 0부터 n까지의 정수의 합(`Finset.range (n + 1)` 사용)을 두 배로 하여 n(n+1)과 같다고 올바르게 형식화하였으며, 이는 인간의 설명과 수학적으로 동일합니다."
+  }
+}

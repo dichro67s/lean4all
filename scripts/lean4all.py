@@ -582,6 +582,20 @@ def git_dates(path: str) -> tuple[str | None, str | None]:
     return (out[-1] if out else None), None
 
 
+def load_informal(tid: str, card: dict) -> dict | None:
+    """Qwen's read-back of the statement (informal/<ID>.json), if present and current."""
+    path = ROOT / "informal" / f"{tid}.json"
+    if not path.exists():
+        return None
+    try:
+        from informalize import formal_hash  # local module; imported lazily to avoid a cycle
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["stale"] = data.get("hash") != formal_hash(card)
+        return data
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def repo_slug() -> str:
     if os.environ.get("GITHUB_REPOSITORY"):
         return os.environ["GITHUB_REPOSITORY"]
@@ -616,6 +630,7 @@ def site(lean: bool) -> None:
             "proposer": card.get("proposer"), "created": created, "status": r["status"],
             "errors": r["errors"], "proof_errors": r["proof_errors"],
             "used_by": sorted(used_by.get(tid, [])), "proof": None,
+            "informal": load_informal(tid, card),
         }
         if sol and r["proof"]:
             date = git_dates(f"solutions/{tid}.lean")[0] or now

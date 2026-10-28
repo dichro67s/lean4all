@@ -1,0 +1,21 @@
+{
+  "id": "T0007",
+  "hash": "a302e5f83fae8f50",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-28T21:40:00+00:00",
+  "en": "For any natural number $n$, the sum of the cubes of the integers from $0$ to $n$ is equal to the square of the sum of the integers from $0$ to $n$. That is, $\\sum_{i=0}^{n} i^3 = \\left(\\sum_{i=0}^{n} i\\right)^2$.",
+  "ko": "임의의 자연수 $n$에 대하여, $0$부터 $n$까지의 정수의 세제곱의 합은 $0$부터 $n$까지의 정수의 합의 제곱과 같다. 즉, $\\sum_{i=0}^{n} i^3 = \\left(\\sum_{i=0}^{n} i\\right)^2$이다.",
+  "caveats_en": [
+    "The summation index $i$ ranges over $\\{0, 1, \\dots, n\\}$ because `Finset.range (n + 1)` represents the set of natural numbers strictly less than $n+1$.",
+    "The variable $n$ is a natural number, so it includes $0$."
+  ],
+  "caveats_ko": [
+    "`Finset.range (n + 1)`은 $n+1$보다 작은 자연수들의 집합이므로, 합산의 범위 $i$는 $\\{0, 1, \\dots, n\\}$이다.",
+    "변수 $n$은 자연수이므로 $0$을 포함한다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement correctly formalizes Nicomachus's theorem, summing cubes and the linear sum from 0 to n, which matches the mathematical description.",
+    "note_ko": "Lean 문장은 0부터 n까지의 세제곱의 합과 0부터 n까지의 합(삼각수)의 제곱이 같다는 니코마코스 정리를 정확히 형식화하고 있습니다."
+  }
+}

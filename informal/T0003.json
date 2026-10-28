@@ -1,0 +1,21 @@
+{
+  "id": "T0003",
+  "hash": "2d0e5bb8d59feae1",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-28T21:39:40+00:00",
+  "en": "Let $n$ and $p$ be natural numbers such that $p$ is prime. If $p$ divides $n! + 1$, then $n < p$.",
+  "ko": "$n$과 $p$를 자연수라 하고, $p$가 소수라고 하자. 만약 $p$가 $n! + 1$을 나누면, $n < p$이다.",
+  "caveats_en": [
+    "Natural numbers $\\mathbb{N}$ in Lean include $0$, so $n=0$ is a valid case (where $0! = 1$).",
+    "The divisibility relation $p \\mid m$ implies $p \\neq 0$ for $m \\neq 0$, which is consistent with $p$ being prime."
+  ],
+  "caveats_ko": [
+    "Lean의 자연수 $\\mathbb{N}$은 $0$을 포함하므로, $n=0$인 경우($0! = 1$)도 고려 대상이다.",
+    "소수 $p$는 $0$이 아니므로, $p \\mid m$ 관계는 $p \\neq 0$을 함의한다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement `n < p` is mathematically equivalent to the human description's `p > n`. The hypotheses (p is prime, p divides n! + 1) and the conclusion are identical.",
+    "note_ko": "Lean 문장의 `n < p`는 인간 설명의 `p > n`과 수학적으로 동일합니다. 가설(p가 소수, p가 n! + 1을 나눔)과 결론이 일치합니다."
+  }
+}

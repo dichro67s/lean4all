@@ -1,0 +1,23 @@
+{
+  "id": "T0009",
+  "hash": "ac6eb17364310aed",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-28T21:40:14+00:00",
+  "en": "For every positive natural number $n$, there exists a natural number $k$ such that applying the function $f(m) = m/2$ if $m$ is even and $f(m) = 3m+1$ if $m$ is odd, $k$ times to $n$, yields $1$.",
+  "ko": "모든 양의 자연수 $n$에 대하여, 짝수일 때 $m/2$로, 홀수일 때 $3m+1$로 변환하는 함수 $f$를 $n$에 $k$번 적용한 결과가 $1$이 되는 자연수 $k$가 존재한다.",
+  "caveats_en": [
+    "The division $m/2$ denotes integer division (floor division) on natural numbers.",
+    "The notation $f^{[k]}$ represents the $k$-th iterate of the function $f$.",
+    "The hypothesis $0 < n$ ensures $n$ is a positive natural number, excluding $0$."
+  ],
+  "caveats_ko": [
+    "여기서 $m/2$는 자연수에서의 정수 나눗셈(바닥 함수)을 의미한다.",
+    "표기 $f^{[k]}$는 함수 $f$의 $k$번 반복 적용(iterate)을 나타낸다.",
+    "가정 $0 < n$은 $n$이 $0$이 아닌 양의 자연수임을 보장한다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement correctly formalizes the Collatz conjecture as described: for any positive natural number n, there exists an iteration count k such that applying the Collatz function k times results in 1.",
+    "note_ko": "Lean 문장은 Collatz 추측을 올바르게 형식화했습니다: 모든 양의 자연수 n에 대해, Collatz 함수를 k번 적용하면 1이 되는 자연수 k가 존재합니다."
+  }
+}

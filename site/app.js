@@ -201,9 +201,14 @@
         <div class="grid grid-3">${finished.slice(0, 3).map(missionCard).join("")}</div></section>` : ""}
       <section class="section">
         <div class="section-head"><h2>${t("home.latest")}</h2><span class="spacer"></span><a href="#/activity">${t("home.allActivity")}</a></div>
-        <div class="card pad"><ul class="feed">${D.activity.slice(0, 8).map(activityItem).join("")}</ul></div>
+        <div class="card pad"><ul class="feed">${homeFeed().map(activityItem).join("")}</ul></div>
       </section>
       <section class="section">${creditBlock()}</section>`;
+  }
+
+  function homeFeed() {
+    const main = D.activity.filter((a) => a.kind !== "proposed");
+    return (main.length >= 6 ? main : D.activity).slice(0, 8);
   }
 
   function viewMissions(q) {
@@ -387,6 +392,7 @@
           <h2>${t("t.statement")}</h2>
           ${codeBlock(th.lean)}
           <p class="small muted">${t("t.importHint", th.id)}</p>
+          ${informalBlock(th)}
           ${th.errors.length ? `<div class="err">${esc(th.errors.join("\n\n"))}</div>` : ""}
           ${proofSection}
           ${th.used_by.length ? `<h2>${t("t.usedBy")}</h2><ul>${th.used_by.map(depRow).join("")}</ul>` : ""}
@@ -406,11 +412,35 @@
       </div>`;
   }
 
+  function auditChip(inf) {
+    if (!inf || !inf.audit) return "";
+    const v = inf.audit.verdict;
+    const cls = v === "match" ? "st-proved" : v === "minor" ? "st-sketched" : "st-blocked";
+    return `<span class="chip ${cls}" title="${esc(t("q.badge"))}">${t(`q.${v}`)}</span>`;
+  }
+
+  function informalBlock(th) {
+    const inf = th.informal;
+    if (!inf) return "";
+    const ko = LANG === "ko";
+    const text = (ko && inf.ko) || inf.en;
+    const cav = ((ko && inf.caveats_ko) || inf.caveats_en || []).filter(Boolean);
+    const note = ko ? inf.audit?.note_ko : inf.audit?.note_en;
+    return `<div class="informal card">
+      <div class="row"><span class="qwen-mark">Q</span><b>${t("q.title")}</b><span class="spacer"></span>${auditChip(inf)}</div>
+      <div class="prose informal-text">${md(text)}</div>
+      ${cav.length ? `<details class="informal-cav"><summary>${t("q.caveats")} (${cav.length})</summary><ul>${cav.map((c) => `<li>${md(c, true)}</li>`).join("")}</ul></details>` : ""}
+      ${note && inf.audit.verdict !== "match" ? `<p class="callout small">${md(note, true)}</p>` : ""}
+      ${inf.stale ? `<p class="small" style="color:var(--blocked)">${t("q.stale")}</p>` : ""}
+      <p class="small muted informal-by">${esc(t("q.by", inf.model))}</p>
+    </div>`;
+  }
+
   function viewLibrary(q) {
     const term = (q.get("q") || "").toLowerCase(), st = q.get("status") || "";
     let list = D.theorems;
     if (st) list = list.filter((x) => x.status === st);
-    if (term) list = list.filter((x) => [x.id, x.title, x.title_ko, x.description, x.description_ko, x.statement, ...x.tags]
+    if (term) list = list.filter((x) => [x.id, x.title, x.title_ko, x.description, x.description_ko, x.statement, x.informal?.en, x.informal?.ko, ...x.tags]
       .join(" ").toLowerCase().includes(term));
     const link = (o) => { const p = new URLSearchParams({ q: term, status: st, ...o }); for (const [k, v] of [...p]) if (!v) p.delete(k); return `#/library?${p}`; };
     return `
@@ -424,9 +454,10 @@
       </div>
       <div class="grid">${list.map((x) => `
         <a class="card mcard" href="#/theorems/${x.id}">
-          <div class="row"><span class="mono muted small">${x.id}</span>${chip(x.status)}<span class="spacer"></span>
+          <div class="row"><span class="mono muted small">${x.id}</span>${chip(x.status)}${x.informal?.audit && x.informal.audit.verdict !== "match" ? auditChip(x.informal) : ""}<span class="spacer"></span>
             <span class="small muted">${(x.missions || []).map((mm) => esc(loc(MI[mm], "title") || mm)).join(", ")}</span></div>
           <h3>${esc(loc(x, "title"))}</h3>
+          ${x.informal ? `<div class="lib-reading">${md((LANG === "ko" && x.informal.ko) || x.informal.en, true)}</div>` : ""}
           <pre class="code" style="padding:8px 12px"><code>${hl(`theorem ${x.id} ${x.statement}`)}</code></pre>
         </a>`).join("") || `<div class="empty">${t("lib.none")}</div>`}</div>`;
   }
@@ -467,12 +498,31 @@
       ${proposed.length ? `<h2>${t("u.statements")}</h2><div class="card">${theoremTable(proposed.map((x) => x.id))}</div>` : ""}`;
   }
 
-  function viewActivity() {
+  function viewActivity(q) {
+    const f = q.get("f") || "all";
+    const groups = { all: () => true, proofs: (a) => a.kind === "solution" || a.kind === "disproof",
+      statements: (a) => a.kind === "proposed", missions: (a) => a.kind === "mission" };
+    const list = D.activity.filter(groups[f] || groups.all);
+    const dayKey = (iso) => new Date(iso).toLocaleDateString(LANG, { year: "numeric", month: "long", day: "numeric" });
+    const today = dayKey(new Date().toISOString()), yest = dayKey(new Date(Date.now() - 864e5).toISOString());
+    let html = "", cur = null;
+    for (const a of list) {
+      const k = dayKey(a.date);
+      if (k !== cur) {
+        if (cur !== null) html += "</ul>";
+        html += `<div class="day">${k === today ? t("a.today") : k === yest ? t("a.yesterday") : k}</div><ul class="feed">`;
+        cur = k;
+      }
+      html += activityItem(a);
+    }
+    if (cur !== null) html += "</ul>";
     return `
       <div class="crumbs"><a href="#/">${t("nav.home")}</a> / ${t("nav.activity")}</div>
       <h1>${t("a.title")}</h1>
       <p class="muted">${t("a.lead")}</p>
-      <div class="card pad"><ul class="feed">${D.activity.map(activityItem).join("")}</ul></div>`;
+      <div class="tags" style="margin-bottom:16px">${Object.keys(groups).map((k) =>
+        `<a class="tag ${k === f ? "on" : ""}" href="#/activity${k === "all" ? "" : "?f=" + k}">${t(`a.f.${k}`)} (${D.activity.filter(groups[k]).length})</a>`).join("")}</div>
+      <div class="card pad">${html || `<div class="empty">—</div>`}</div>`;
   }
 
   async function viewDoc(base, crumb, intro, outro = "") {
@@ -590,6 +640,7 @@
     document.documentElement.lang = LANG;
     document.querySelectorAll("[data-i18n]").forEach((el) => { el.innerHTML = t(el.dataset.i18n); });
     document.getElementById("lang").textContent = t("lang.switch");
+    document.getElementById("search-open").setAttribute("aria-label", t("search.open"));
     document.getElementById("lang").setAttribute("aria-label", t("lang.switch"));
     if (D) {
       document.getElementById("repo-link").href = ghUrl();
@@ -617,7 +668,7 @@
       case "theorems": html = viewTheorem(parts[1]); title = TH[parts[1]] ? `${parts[1]}: ${loc(TH[parts[1]], "title")}` : ""; break;
       case "library": html = viewLibrary(q); title = t("nav.library"); break;
       case "contributors": html = parts[1] ? viewContributor(parts[1]) : viewContributors(); title = parts[1] ? "@" + parts[1] : t("nav.contributors"); break;
-      case "activity": html = viewActivity(); title = t("nav.activity"); break;
+      case "activity": html = viewActivity(q); title = t("nav.activity"); break;
       case "start": html = await viewStart(); title = t("nav.start"); break;
       case "about": html = await viewAbout(); title = t("footer.how"); break;
       case "propose": html = viewPropose(); title = t("nav.propose"); break;
@@ -625,7 +676,9 @@
     }
     document.title = title ? `${title} · Lean4All` : "Lean4All";
     app.innerHTML = html;
-    if (!qs) window.scrollTo(0, 0);
+    const y = history.state && typeof history.state.y === "number" ? history.state.y : null;
+    if (y !== null) window.scrollTo(0, y);
+    else if (!qs) window.scrollTo(0, 0);
     wire(parts[0]);
   }
 
@@ -647,6 +700,57 @@
     if (ms) ms.addEventListener("change", (e) => setQ("sort", e.target.value));
     if (page === "propose") { document.getElementById("pform").addEventListener("input", proposeOutput); proposeOutput(); }
   }
+
+  // ---------- search (/ or Ctrl+K) -------------------------------------------------------
+  const sEl = document.getElementById("search"), sQ = document.getElementById("search-q");
+  const sRes = document.getElementById("search-results");
+  let sItems = [], sSel = 0;
+  function searchIndex() {
+    const ms = D.missions.map((m) => ({ kind: "mission", href: `#/missions/${m.id}`, id: m.id, title: loc(m, "title"), status: m.completed ? m.goal_status : null,
+      text: [m.id, m.title, m.title_ko, m.summary, m.summary_ko, ...(m.tags || [])].join(" ").toLowerCase() }));
+    const ts = D.theorems.map((x) => ({ kind: "theorem", href: `#/theorems/${x.id}`, id: x.id, title: loc(x, "title"), status: x.status,
+      text: [x.id, x.title, x.title_ko, x.description, x.description_ko, x.statement, x.informal?.en, x.informal?.ko, ...x.tags].join(" ").toLowerCase() }));
+    return [...ms, ...ts];
+  }
+  function renderSearch() {
+    const words = sQ.value.toLowerCase().split(/\s+/).filter(Boolean);
+    const all = searchIndex();
+    sItems = (words.length ? all.filter((it) => words.every((w) => it.text.includes(w))) : all.filter((it) => it.kind === "mission")).slice(0, 12);
+    sSel = Math.min(sSel, Math.max(0, sItems.length - 1));
+    sRes.innerHTML = sItems.map((it, i) => `<li role="option" aria-selected="${i === sSel}" class="${i === sSel ? "on" : ""}" data-i="${i}">
+      <span class="label">${t(`search.${it.kind}`)}</span><span class="mono muted small">${esc(it.kind === "theorem" ? it.id : "")}</span>
+      <span class="s-title">${esc(it.title)}</span>${it.status ? chip(it.status) : ""}</li>`).join("") || `<li class="muted">${t("search.none")}</li>`;
+  }
+  function openSearch() {
+    if (!D) return;
+    sQ.placeholder = t("search.ph");
+    document.getElementById("search-hint").textContent = t("search.hint");
+    sEl.hidden = false; sQ.value = ""; sSel = 0; renderSearch(); sQ.focus();
+  }
+  const closeSearch = () => { sEl.hidden = true; };
+  const goSearch = (i) => { const it = sItems[i]; if (it) { closeSearch(); location.hash = it.href; } };
+  document.getElementById("search-open").addEventListener("click", openSearch);
+  sQ.addEventListener("input", () => { sSel = 0; renderSearch(); });
+  sQ.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown") { sSel = Math.min(sSel + 1, sItems.length - 1); renderSearch(); e.preventDefault(); }
+    else if (e.key === "ArrowUp") { sSel = Math.max(sSel - 1, 0); renderSearch(); e.preventDefault(); }
+    else if (e.key === "Enter") { goSearch(sSel); e.preventDefault(); }
+    else if (e.key === "Escape") closeSearch();
+  });
+  sRes.addEventListener("click", (e) => { const li = e.target.closest("[data-i]"); if (li) goSearch(+li.dataset.i); });
+  sEl.addEventListener("click", (e) => { if (e.target === sEl) closeSearch(); });
+  document.addEventListener("keydown", (e) => {
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || "");
+    if ((e.key === "/" && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k")) { e.preventDefault(); openSearch(); }
+    else if (e.key === "Escape" && !sEl.hidden) closeSearch();
+  });
+
+  // Remember the scroll position in the current history entry, so Back returns to it.
+  let scrollTimer;
+  window.addEventListener("scroll", () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => { try { history.replaceState({ ...(history.state || {}), y: window.scrollY }, ""); } catch {} }, 250);
+  }, { passive: true });
 
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-copy]");

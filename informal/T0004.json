@@ -1,0 +1,15 @@
+{
+  "id": "T0004",
+  "hash": "778857765181bbab",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-28T21:39:42+00:00",
+  "en": "The square root of 2 is irrational.",
+  "ko": "$\\sqrt{2}$는 무리수이다.",
+  "caveats_en": [],
+  "caveats_ko": [],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement asserts that the square root of 2 is irrational, which is mathematically equivalent to the human description stating that it is not a quotient of two integers.",
+    "note_ko": "Lean 문장은 2의 제곱근이 무리수임을 주장하며, 이는 인간이 작성한 설명인 '두 정수의 비가 아니다'라는 것과 수학적으로 동일합니다."
+  }
+}

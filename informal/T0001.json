@@ -1,0 +1,21 @@
+{
+  "id": "T0001",
+  "hash": "73aa4a3bf59533e2",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-28T21:39:27+00:00",
+  "en": "For every natural number $n$, there exists a prime number $p$ such that $n \\le p$.",
+  "ko": "모든 자연수 $n$에 대하여, $n \\le p$를 만족하는 소수 $p$가 존재한다.",
+  "caveats_en": [
+    "The natural numbers $\\mathbb{N}$ in Lean include $0$, so the statement holds for $n=0$ as well.",
+    "The existence of such a prime is guaranteed by Euclid's theorem (or Bertrand's postulate for $n \\ge 1$), but the Lean statement only asserts existence without specifying a bound like $p < 2n$."
+  ],
+  "caveats_ko": [
+    "Lean에서의 자연수 $\\mathbb{N}$은 $0$을 포함하므로, $n=0$인 경우에도 성립한다.",
+    "이 정리는 소수의 무한성(유클리드 정리)에 의해 보장되지만, Lean 문장은 $p < 2n$과 같은 상한은 명시하지 않고 존재성만을 주장한다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement exactly formalizes the human description: for every natural number n, there exists a prime p such that n ≤ p.",
+    "note_ko": "Lean 문장은 인간 설명을 정확히 형식화합니다: 모든 자연수 n에 대해 n ≤ p인 소수 p가 존재합니다."
+  }
+}

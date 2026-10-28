@@ -1,0 +1,21 @@
+{
+  "id": "T0008",
+  "hash": "ab0f6bf1df4987f3",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-28T21:40:07+00:00",
+  "en": "For every natural number $n$, the number $n^2 + n + 41$ is prime.",
+  "ko": "모든 자연수 $n$에 대하여, $n^2 + n + 41$은 소수이다.",
+  "caveats_en": [
+    "The domain of $n$ is $\\mathbb{N}$, which includes $0$.",
+    "The statement is false for $n=40$ (where $40^2+40+41 = 41^2$), so the theorem as stated is not provable in Lean."
+  ],
+  "caveats_ko": [
+    "$n$의 정의역은 $0$을 포함하는 자연수 $\\mathbb{N}$이다.",
+    "$n=40$일 때 $40^2+40+41 = 41^2$이 되어 소수가 아니므로, 이 명제는 거짓이다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement formalizes the claim that $n^2 + n + 41$ is prime for all natural numbers $n$, which matches the human description's core assertion. The human description notes that this is a famous false claim (it fails at $n=40$), but the formalization correctly captures the statement being made.",
+    "note_ko": "Lean 문장은 모든 자연수 $n$에 대해 $n^2 + n + 41$이 소수라는 주장을 형식화하며, 이는 인간 설명의 핵심 주장과 일치합니다. 인간 설명은 이것이 유명한 거짓 명제($n=40$에서 성립하지 않음)임을 언급하지만, 형식화는 제시된 주장을 정확히 포착하고 있습니다."
+  }
+}
