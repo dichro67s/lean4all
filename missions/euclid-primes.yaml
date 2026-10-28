@@ -1,0 +1,24 @@
+id: euclid-primes
+title: "Euclid's Theorem: There Are Infinitely Many Primes"
+type: Textbook
+tags: [Number Theory]
+captain: dichro67s
+reviewed: true
+summary: Formalize Euclid's proof that the primes never run out, through the n! + 1 argument.
+description: |
+  Euclid's argument: given $n$, every prime factor $p$ of $n! + 1$ must be larger than $n$,
+  because every number up to $n$ divides $n!$.
+
+  The goal has been **sketched**: its proof reduces to the two milestones. Once both
+  milestones are proved, the goal resolves automatically.
+source:
+  title: Euclid, Elements, Book IX, Proposition 20
+  url: https://mathcs.clarku.edu/~djoyce/java/elements/bookIX/propIX20.html
+goal: T0001
+milestones:
+  - title: n! + 1 has a prime factor
+    statement: "For every $n$ there is a prime $p$ with $p \\mid n! + 1$."
+    theorem: T0002
+  - title: That prime factor is larger than n
+    statement: "If $p$ is prime and $p \\mid n! + 1$, then $n < p$."
+    theorem: T0003

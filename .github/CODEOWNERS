@@ -1,0 +1,8 @@
+# Tooling and mission cores need a maintainer's review.
+/.github/      @dichro67s
+/scripts/      @dichro67s
+/site/         @dichro67s
+/missions/     @dichro67s
+/definitions/  @dichro67s
+/lakefile.toml @dichro67s
+/lean-toolchain @dichro67s

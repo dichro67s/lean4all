@@ -1,0 +1,10 @@
+id: T0004
+title: √2 is irrational
+description: |
+  The real number $\sqrt{2}$ is not a quotient of two integers.
+statement: ": Irrational (Real.sqrt 2)"
+tags: [Number Theory, Real Analysis]
+source: Classical (attributed to the Pythagoreans)
+mission: sqrt-two
+proposer: dichro67s
+created: 2026-10-29

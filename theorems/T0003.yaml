@@ -1,0 +1,11 @@
+id: T0003
+title: A prime factor of n! + 1 exceeds n
+description: |
+  If a prime $p$ divides $n! + 1$, then $p > n$. Otherwise $p \mid n!$,
+  so $p$ would divide $1$.
+statement: "(n p : ℕ) (hp : Nat.Prime p) (hd : p ∣ Nat.factorial n + 1) : n < p"
+tags: [Number Theory]
+source: Euclid, Elements IX.20 (step 2)
+mission: euclid-primes
+proposer: dichro67s
+created: 2026-10-29

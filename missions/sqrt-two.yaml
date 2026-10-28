@@ -1,0 +1,20 @@
+id: sqrt-two
+title: The Irrationality of √2
+type: Classic
+tags: [Number Theory, Real Analysis]
+captain: dichro67s
+reviewed: true
+summary: The oldest irrationality proof, done in Lean with the parity lemma as a milestone.
+description: |
+  We show that $\sqrt 2 \notin \mathbb{Q}$. The classical proof assumes $\sqrt 2 = p/q$ in
+  lowest terms and derives that both $p$ and $q$ are even.
+source:
+  title: Hardy & Wright, An Introduction to the Theory of Numbers, Thm. 43
+goal: T0004
+milestones:
+  - title: Parity lemma
+    statement: "If $n^2$ is even then $n$ is even."
+    theorem: T0005
+  - title: √2 is irrational
+    statement: "$\\sqrt{2}$ is irrational."
+    theorem: T0004

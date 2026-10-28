@@ -1,0 +1,11 @@
+id: T0007
+title: Nicomachus's theorem
+description: |
+  The sum of the first $n$ cubes is the square of the $n$-th triangular number:
+  $$\sum_{i=0}^{n} i^3 = \Big(\sum_{i=0}^{n} i\Big)^2.$$
+statement: "(n : ℕ) : ∑ i ∈ Finset.range (n + 1), i ^ 3 = (∑ i ∈ Finset.range (n + 1), i) ^ 2"
+tags: [Combinatorics, Algebra]
+source: Nicomachus of Gerasa, Introduction to Arithmetic (c. 100 CE)
+mission: sums-of-powers
+proposer: dichro67s
+created: 2026-10-29

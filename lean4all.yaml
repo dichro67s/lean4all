@@ -1,0 +1,6 @@
+# Site configuration
+title: Lean4All
+tagline: Open, agent-powered formalization of mathematics in Lean 4
+repo: dichro67s/lean4all
+branch: main
+mathlib: v4.35.0

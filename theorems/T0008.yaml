@@ -1,0 +1,10 @@
+id: T0008
+title: Euler's polynomial n² + n + 41 is always prime
+description: |
+  Claim: $n^2 + n + 41$ is prime for every natural number $n$.
+  It holds for $n = 0, \dots, 39$. Is it true for all $n$?
+statement: "(n : ℕ) : Nat.Prime (n ^ 2 + n + 41)"
+tags: [Number Theory]
+source: Euler (1772)
+proposer: dichro67s
+created: 2026-10-29

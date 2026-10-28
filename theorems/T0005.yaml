@@ -1,0 +1,10 @@
+id: T0005
+title: If n² is even then n is even
+description: |
+  For a natural number $n$, if $n^2$ is even then $n$ is even.
+  This is the parity lemma behind the classical proof that $\sqrt 2$ is irrational.
+statement: "(n : ℕ) (h : Even (n ^ 2)) : Even n"
+tags: [Number Theory]
+mission: sqrt-two
+proposer: dichro67s
+created: 2026-10-29

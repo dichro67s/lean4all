@@ -1,0 +1,11 @@
+id: T0002
+title: n! + 1 has a prime factor
+description: |
+  For every $n$, the number $n! + 1$ is divisible by some prime $p$.
+  Since $n! + 1 \ge 2$, it is not a unit.
+statement: "(n : ℕ) : ∃ p, Nat.Prime p ∧ p ∣ Nat.factorial n + 1"
+tags: [Number Theory]
+source: Euclid, Elements IX.20 (step 1)
+mission: euclid-primes
+proposer: dichro67s
+created: 2026-10-29

@@ -1,0 +1,11 @@
+id: T0009
+title: Collatz conjecture
+description: |
+  Iterating $m \mapsto m/2$ for even $m$ and $m \mapsto 3m+1$ for odd $m$,
+  every positive integer eventually reaches $1$.
+statement: "(n : ℕ) (hn : 0 < n) : ∃ k, (fun m => if m % 2 = 0 then m / 2 else 3 * m + 1)^[k] n = 1"
+tags: [Number Theory, Dynamical Systems]
+source: Lothar Collatz (1937)
+mission: collatz
+proposer: dichro67s
+created: 2026-10-29

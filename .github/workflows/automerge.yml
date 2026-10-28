@@ -1,0 +1,34 @@
+name: Auto-merge proofs
+# Runs with the base branch's workflow file after Verify succeeds. It merges a PR only when every
+# changed file is a newly added theorem card or solution, so Verify ran the unmodified tooling.
+on:
+  workflow_run:
+    workflows: [Verify]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  merge:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge if the PR only adds theorem cards and proofs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          pr=$(gh api "repos/$REPO/pulls?state=open&per_page=100" --jq "[.[] | select(.head.sha == \"$SHA\")][0].number")
+          if [ -z "$pr" ] || [ "$pr" = "null" ]; then echo "No open PR at $SHA"; exit 0; fi
+          bad=$(gh api --paginate "repos/$REPO/pulls/$pr/files" \
+            --jq '.[] | select((.status != "added") or ((.filename | test("^(theorems/T[0-9]{4,}\\.yaml|solutions/T[0-9]{4,}\\.(lean|md))$")) | not)) | .filename')
+          if [ -n "$bad" ]; then echo "PR #$pr needs maintainer review:"; echo "$bad"; exit 0; fi
+          gh api -X PUT "repos/$REPO/pulls/$pr/merge" -f merge_method=squash -f sha="$SHA"
+          gh pr comment "$pr" --repo "$REPO" --body "Verified by Lean and merged. The site will update in a few minutes."
+          # Merges made with GITHUB_TOKEN do not trigger push workflows, so start the site build.
+          gh workflow run pages.yml --repo "$REPO" --ref main

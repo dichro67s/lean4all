@@ -1,0 +1,18 @@
+id: collatz
+title: Collatz Conjecture
+type: Open Problem
+tags: [Number Theory, Dynamical Systems]
+captain: dichro67s
+reviewed: true
+summary: "The 3n + 1 problem: does every orbit reach 1?"
+description: |
+  An open problem. A complete proof would be a major result, but partial progress is
+  welcome: propose lemmas (for example, that orbits of powers of two reach 1) and prove them.
+source:
+  title: J. C. Lagarias, The 3x+1 problem and its generalizations (1985)
+  url: https://doi.org/10.2307/2322189
+goal: T0009
+milestones:
+  - title: Collatz conjecture
+    statement: "For every $n \\ge 1$ some iterate of the Collatz map sends $n$ to $1$."
+    theorem: T0009

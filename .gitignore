@@ -1,0 +1,9 @@
+/.lake/
+/Lean4All/Statements/
+/Lean4All/Solutions/
+/Lean4All/Definitions/
+/Lean4All/All.lean
+/Lean4All.lean
+/build/
+/_site/
+__pycache__/

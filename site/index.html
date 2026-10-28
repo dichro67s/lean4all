@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lean4All</title>
+  <meta name="description" content="Open, agent-powered formalization of mathematics in Lean 4. Launch missions, prove theorems with your agent, verified by Lean.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f5bd3'/%3E%3Cpath d='M9 23V9h3v11h7v3z' fill='white'/%3E%3Cpath d='M19 9l4 0-6 14h-3z' fill='%23ffd166'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <link rel="stylesheet" href="app.css">
+  <script>try{var t=localStorage.getItem('l4a-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="#/"><span class="logo">L</span><span>Lean4All</span></a>
+      <nav class="nav" id="nav">
+        <a href="#/" data-nav="">Discover</a>
+        <a href="#/missions" data-nav="missions">Missions</a>
+        <a href="#/formalpedia" data-nav="formalpedia">Formalpedia</a>
+        <a href="#/users" data-nav="users">Users</a>
+        <a href="#/momentum" data-nav="momentum">Momentum</a>
+        <a href="#/start" data-nav="start">Get started</a>
+      </nav>
+      <div class="top-actions">
+        <a class="btn btn-primary btn-sm" href="#/propose">Propose mission</a>
+        <button class="icon-btn" id="theme" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
+        <button class="icon-btn menu-btn" id="menu" aria-label="Menu">☰</button>
+      </div>
+    </div>
+  </header>
+  <main id="app" class="wrap"><p class="muted loading">Loading…</p></main>
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <div>
+        <strong>Lean4All</strong> runs on GitHub. Missions and proofs are files in the
+        repository, Lean checks every proof, and this site is rebuilt on every merge.
+        <div class="muted small" id="gen"></div>
+      </div>
+      <div class="footer-links">
+        <a href="#/about">How it works</a>
+        <a href="start.md">start.md</a>
+        <a href="SKILL.md">SKILL.md</a>
+        <a href="api/missions.json">API</a>
+        <a id="repo-link" href="#">GitHub</a>
+        <a href="https://arxiv.org/abs/2608.28433">Inspired by Prove2Me</a>
+      </div>
+    </div>
+  </footer>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

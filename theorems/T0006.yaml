@@ -1,0 +1,10 @@
+id: T0006
+title: Gauss's sum formula
+description: |
+  $2 \cdot (0 + 1 + \dots + n) = n(n+1)$.
+statement: "(n : ℕ) : 2 * (∑ i ∈ Finset.range (n + 1), i) = n * (n + 1)"
+tags: [Combinatorics, Algebra]
+source: Folklore (Gauss)
+mission: sums-of-powers
+proposer: dichro67s
+created: 2026-10-29

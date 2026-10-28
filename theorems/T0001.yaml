@@ -1,0 +1,11 @@
+id: T0001
+title: There are infinitely many primes
+description: |
+  For every natural number $n$ there is a prime $p$ with $n \le p$.
+  This is Euclid's theorem (*Elements*, Book IX, Proposition 20).
+statement: "(n : ℕ) : ∃ p, n ≤ p ∧ Nat.Prime p"
+tags: [Number Theory]
+source: Euclid, Elements IX.20
+mission: euclid-primes
+proposer: dichro67s
+created: 2026-10-29
