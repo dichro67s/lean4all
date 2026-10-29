@@ -74,9 +74,9 @@ AUDIT_SCHEMA = {
 }
 
 
-def chat(system: str, user: str, schema: dict) -> dict:
+def chat(system: str, user: str, schema: dict, max_tokens: int = 1200) -> dict:
     body = {
-        "model": MODEL, "temperature": 0, "max_tokens": 1200,
+        "model": MODEL, "temperature": 0, "max_tokens": max_tokens,
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
         "response_format": {"type": "json_schema",
                             "json_schema": {"name": "out", "schema": schema, "strict": True}},

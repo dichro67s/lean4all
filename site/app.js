@@ -247,46 +247,57 @@
       <div class="grid grid-3">${list.map(missionCard).join("") || `<div class="empty">${t("ms.none")}</div>`}</div>`;
   }
 
-  function dagSvg(ids) {
+  // Layered DAG. node(id) -> {href, title, sub, color}; deps(id) -> child ids (drawn below).
+  function graphSvg(ids, deps, node) {
+    if (!ids.length) return "";
     const set = new Set(ids);
-    const deps = (id) => ((TH[id]?.proof?.deps) || []).filter((d) => set.has(d));
+    const kids = (id) => (deps(id) || []).filter((d) => set.has(d) && d !== id);
     const level = {};
     const visit = (id, d, seen) => {
-      if (seen.has(id)) return;
+      if (seen.has(id) || d > 40) return;
       level[id] = Math.max(level[id] ?? 0, d);
       const next = new Set(seen).add(id);
-      deps(id).forEach((c) => visit(c, d + 1, next));
+      kids(id).forEach((c) => visit(c, d + 1, next));
     };
-    const parents = new Set(ids.flatMap(deps));
+    const parents = new Set(ids.flatMap(kids));
     ids.filter((id) => !parents.has(id)).forEach((id) => visit(id, 0, new Set()));
     ids.forEach((id) => { if (level[id] === undefined) level[id] = 0; });
     const rows = [];
     ids.forEach((id) => (rows[level[id]] ||= []).push(id));
     const W = 190, H = 54, GX = 26, GY = 56;
-    const width = Math.max(...rows.map((r) => r.length)) * (W + GX) - GX + 16;
+    const width = Math.max(...rows.map((r) => (r || []).length)) * (W + GX) - GX + 16;
     const height = rows.length * (H + GY) - GY + 16;
     const pos = {};
     rows.forEach((r, y) => {
+      r = r || [];
       const off = (width - (r.length * (W + GX) - GX)) / 2;
       r.forEach((id, x) => (pos[id] = { x: off + x * (W + GX), y: 8 + y * (H + GY) }));
     });
-    const col = (s) => ({ proved: "proved", disproved: "disproved", sketched: "sketched", blocked: "blocked", invalid: "blocked" }[s] || "open");
     let edges = "", nodes = "";
-    ids.forEach((id) => deps(id).forEach((c) => {
+    ids.forEach((id) => kids(id).forEach((c) => {
       const a = pos[id], b = pos[c];
       const x1 = a.x + W / 2, y1 = a.y + H, x2 = b.x + W / 2, y2 = b.y, my = (y1 + y2) / 2;
       edges += `<path class="edge" d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}"/>`;
     }));
     ids.forEach((id) => {
-      const th = TH[id], p = pos[id], c = col(th.status);
-      const full = loc(th, "title");
-      const title = full.length > 24 ? full.slice(0, 23) + "…" : full;
-      nodes += `<a href="#/theorems/${id}" class="node"><title>${esc(`${id}: ${full} (${stName(th.status)})`)}</title>
-        <rect x="${p.x}" y="${p.y}" width="${W}" height="${H}" rx="10" fill="var(--${c}-bg)" stroke="var(--${c})"/>
+      const n = node(id), p = pos[id];
+      const title = n.title.length > 24 ? n.title.slice(0, 23) + "…" : n.title;
+      const inner = `<title>${esc(n.tip || n.title)}</title>
+        <rect x="${p.x}" y="${p.y}" width="${W}" height="${H}" rx="10" fill="var(--${n.color}-bg)" stroke="var(--${n.color})" ${n.dashed ? 'stroke-dasharray="5 4"' : ""}/>
         <text x="${p.x + 12}" y="${p.y + 22}" fill="var(--text)">${esc(title)}</text>
-        <text class="sub" x="${p.x + 12}" y="${p.y + 40}">${id} · ${esc(stName(th.status))}</text></a>`;
+        <text class="sub" x="${p.x + 12}" y="${p.y + 40}">${esc(n.sub)}</text>`;
+      nodes += n.href ? `<a href="${n.href}" class="node">${inner}</a>` : `<g class="node">${inner}</g>`;
     });
-    return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(t("m.graph"))}">${edges}${nodes}</svg>`;
+    return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img">${edges}${nodes}</svg>`;
+  }
+  const stColor = (s) => ({ proved: "proved", disproved: "disproved", sketched: "sketched", blocked: "blocked", invalid: "blocked" }[s] || "open");
+
+  function dagSvg(ids) {
+    return graphSvg(ids, (id) => TH[id]?.proof?.deps, (id) => {
+      const th = TH[id];
+      return { href: `#/theorems/${id}`, title: loc(th, "title"), sub: `${id} · ${stName(th.status)}`,
+        color: stColor(th.status), tip: `${id}: ${loc(th, "title")} (${stName(th.status)})` };
+    });
   }
 
   function theoremTable(ids) {
@@ -315,6 +326,7 @@
               <span class="spacer"></span>${goal ? `${t("m.goal")}: ${chip(goal.status)}` : ""}</div>
             <div style="margin-top:10px">${bar(pr)}</div>
           </div>
+          ${m.blueprint ? `<div class="card pad bp-link row" style="margin-top:16px"><div><b>${t("m.bp.t")}</b><div class="small muted">${t("m.bp.d")}</div></div><span class="spacer"></span><a class="btn btn-primary btn-sm" href="#/blueprints/${m.blueprint}">${t("m.bp.b")}</a></div>` : ""}
           <div class="prose" style="margin-top:20px">${md(loc(m, "description") || loc(m, "summary"))}</div>
           <h2>${t("m.milestones")}</h2>
           <div class="card pad"><ol class="milestones">
@@ -408,6 +420,146 @@
           </dl>
           <p class="small muted" style="margin-top:16px">${esc(t(`sth.${th.status}`))}</p>
           <p class="small"><a href="${ghUrl(`/blob/${D.branch}/theorems/${th.id}.yaml`)}">${t("t.card")}</a></p>
+        </aside>
+      </div>`;
+  }
+
+  // ---------- arXiv blueprints -------------------------------------------------------------
+  const parseArxiv = (text) => {
+    const s = (text || "").trim();
+    let m = s.match(/(\d{4}\.\d{4,5})(v\d+)?/);
+    if (m) return m[1];
+    m = s.match(/([a-z\-]+(?:\.[A-Z]{2})?\/\d{7})(v\d+)?/);
+    return m ? m[1] : null;
+  };
+  const bpSlug = (aid) => "arxiv-" + aid.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  let issueCache = null;
+
+  function viewArxiv(q) {
+    const raw = q.get("id") || "";
+    const aid = raw ? parseArxiv(raw) : null;
+    const existing = aid && (D.blueprints || []).find((b) => b.id === bpSlug(aid));
+    let result = "";
+    if (raw && !aid) result = `<p class="err" style="font-family:var(--sans)">${t("ax.bad")}</p>`;
+    else if (existing) result = `<div class="card pad callout-card"><b>${t("ax.exists")}</b>
+        <p class="muted">${esc(loc(existing, "title"))}</p><a class="btn btn-primary" href="#/blueprints/${existing.id}">${t("ax.open")}</a></div>`;
+    else if (aid) {
+      const issue = ghUrl(`/issues/new?template=formalize-arxiv.yml&title=${enc("[arXiv] " + aid)}&arxiv=${enc(aid)}`);
+      result = `<div class="card pad callout-card"><h3>${t("ax.request.t", aid)}</h3>
+        <p class="muted">${t("ax.request.d")}</p>
+        <div class="row"><a class="btn btn-primary" href="${issue}" target="_blank" rel="noopener">${t("ax.request.b")}</a>
+          <a class="btn" href="https://arxiv.org/abs/${esc(aid)}" target="_blank" rel="noopener">arXiv:${esc(aid)}</a></div></div>`;
+    }
+    const steps = [1, 2, 3, 4, 5].map((n) => `<li><div class="step-num">${n}</div><div class="step-body"><h3>${t(`ax.s${n}.t`)}</h3><p>${t(`ax.s${n}.d`)}</p></div></li>`).join("");
+    const bps = (D.blueprints || []).map((b) => `<a class="card mcard" href="#/blueprints/${b.id}">
+        <div class="row"><span class="label">arXiv:${esc(b.arxiv)}</span><span class="spacer"></span>
+          <span class="small muted">${t("bp.formalized", b.counts.formalized, b.counts.results)}</span></div>
+        <h3>${esc(loc(b, "title"))}</h3><p>${esc(b.authors.slice(0, 4).join(", "))}${b.authors.length > 4 ? " et al." : ""}</p>
+        ${bar({ total: b.counts.results, proved: b.counts.proved, sketched: b.counts.formalized - b.counts.proved })}</a>`).join("");
+    return `
+      <section class="start-hero">
+        <div class="label">${t("ax.kicker")}</div>
+        <h1>${t("ax.title")}</h1>
+        <p class="lead">${t("ax.lead")}</p>
+      </section>
+      <form id="axform" class="ax-form card pad">
+        <input type="text" id="axid" placeholder="${esc(t("ax.ph"))}" value="${esc(raw)}" autocomplete="off">
+        <button class="btn btn-primary" type="submit">${t("ax.go")}</button>
+      </form>
+      <div style="margin-top:16px">${result}</div>
+      <div class="start-grid">
+        <div>
+          <h2>${t("ax.how")}</h2>
+          <ol class="stepper">${steps}</ol>
+          <h2>${t("ax.done")}</h2>
+          <div class="grid">${bps || `<div class="empty">—</div>`}</div>
+        </div>
+        <aside class="start-side">
+          <div class="card pad"><h3>${t("ax.pending")}</h3><div id="ax-pending" class="small muted">${t("loading")}</div></div>
+        </aside>
+      </div>`;
+  }
+
+  async function loadPending() {
+    const el = document.getElementById("ax-pending");
+    if (!el) return;
+    try {
+      issueCache ||= await (await fetch(`https://api.github.com/repos/${D.repo}/issues?state=open&per_page=50`)).json();
+      const list = (Array.isArray(issueCache) ? issueCache : []).filter((i) => !i.pull_request && /^\[arxiv\]/i.test(i.title));
+      el.innerHTML = list.length ? `<ul class="feed">${list.map((i) => `<li><span class="when">${ago(i.created_at)}</span>
+        <span><a href="${esc(i.html_url)}" target="_blank" rel="noopener">#${i.number}</a> ${esc(i.title.replace(/^\[arxiv\]\s*/i, "arXiv:"))}
+        <span class="muted">· @${esc(i.user.login)}</span></span></li>`).join("")}</ul>` : t("ax.none");
+    } catch { el.textContent = "—"; }
+  }
+
+  const bpCache = {};
+  async function viewBlueprint(id) {
+    if (!bpCache[id]) {
+      try { bpCache[id] = await (await fetch(`api/blueprints/${id}.json`, { cache: "no-cache" })).json(); } catch { return notFound(); }
+    }
+    const bp = bpCache[id], ko = LANG === "ko";
+    const bykey = Object.fromEntries(bp.items.map((it) => [it.key, it]));
+    const results = bp.items.filter((it) => it.kind !== "remark" && it.kind !== "example" && it.kind !== "other");
+    const mdm = (x, inline) => md(x, inline);
+    const rows = results.map((it) => {
+      const th = it.theorem && TH[it.theorem];
+      const title = (ko && it.title_ko) || it.title_en || it.name || "";
+      const stmt = (ko && it.statement_ko) || it.statement_en;
+      const uses = (it.uses || []).filter((u) => bykey[u]).map((u) => `<a href="#bp-${esc(u)}">${esc(bykey[u].display)}</a>`).join(", ");
+      return `<tr id="bp-${esc(it.key)}"><td class="nowrap"><b>${esc(it.display)}</b>${it.name ? `<div class="small muted">${esc(it.name)}</div>` : ""}</td>
+        <td>${title ? `<div><b>${esc(title)}</b></div>` : ""}<div class="prose small">${stmt ? mdm(stmt) : `<code class="tex">${esc(it.tex.slice(0, 400))}</code>`}</div>
+          ${it.theorem ? `<details class="informal-cav"><summary>Lean</summary><pre class="code" style="margin-top:6px"><code>${hl(`theorem ${it.theorem} ${it.lean}`)}</code></pre></details>`
+            : (it.kind === "definition" ? "" : `<div class="small muted" style="margin-top:4px">${t("bp.notFormal")}${it.note ? ": " + esc(it.note.slice(0, 220)) : ""}</div>`)}</td>
+        <td class="small">${uses || "—"}</td>
+        <td>${th ? `${thmLink(th.id)}<div style="margin-top:4px">${chip(th.status)}</div>` : (it.kind === "definition" ? `<span class="tag">${t("bp.def")}</span>` : "—")}</td></tr>`;
+    }).join("");
+    const gIds = results.filter((it) => it.kind !== "definition").map((it) => it.key);
+    const graph = graphSvg(gIds, (k) => bykey[k].uses, (k) => {
+      const it = bykey[k], th = it.theorem && TH[it.theorem];
+      return { href: th ? `#/theorems/${th.id}` : null, title: (ko && it.title_ko) || it.title_en || it.name || it.display,
+        sub: `${it.display}${th ? " · " + th.id + " · " + stName(th.status) : " · " + t("bp.notFormal")}`,
+        color: th ? stColor(th.status) : "open", dashed: !th, tip: it.display };
+    });
+    const conv = (ko && bp.conventions_ko?.length ? bp.conventions_ko : bp.conventions) || [];
+    const m = MI[bp.mission];
+    return `
+      <div class="crumbs"><a href="#/arxiv">${t("nav.arxiv")}</a> / arXiv:${esc(bp.arxiv)}</div>
+      <div class="detail-head">
+        <div class="row"><span class="label">${t("bp.kicker")}</span><span class="tag">arXiv:${esc(bp.arxiv)}</span></div>
+        <h1>${esc((ko && bp.title_ko) || bp.title)}</h1>
+        <p class="muted" style="margin:0">${esc(bp.authors.join(", "))}</p>
+      </div>
+      <div class="two-col">
+        <div>
+          <p class="callout small">${t("bp.machine", bp.model, new Date(bp.generated).toLocaleDateString(LANG))}</p>
+          <h2>${t("bp.rules")}</h2>
+          <ol class="rules">
+            <li>${bp.module ? t("bp.r1", bp.module) : t("bp.r1none")}</li>
+            <li>${t("bp.r2")}</li><li>${t("bp.r3", bp.mission)}</li><li>${t("bp.r4")}</li>
+          </ol>
+          <h2>${t("bp.conv")}</h2>
+          <ul class="conv">${conv.map((c) => `<li>${mdm(c, true)}</li>`).join("")}</ul>
+          ${bp.notation?.length ? `<h2>${t("bp.notation")}</h2><div class="card table-scroll"><table class="list"><thead><tr><th>${t("bp.paper")}</th><th>Lean</th></tr></thead><tbody>
+            ${bp.notation.map((n) => `<tr><td>${mdm(n.paper.includes("$") ? n.paper : `$${n.paper}$`, true)}</td><td><code>${esc(n.lean)}</code></td></tr>`).join("")}</tbody></table></div>` : ""}
+          ${bp.definitions ? `<h2>${t("bp.defs")}</h2><p class="small muted"><code>import Lean4All.Definitions.${esc(bp.module)}</code> · <a href="${ghUrl(`/blob/${D.branch}/definitions/${bp.module}.lean`)}">definitions/${esc(bp.module)}.lean</a></p>${codeBlock(bp.definitions)}` : ""}
+          <h2>${t("bp.graph")}</h2>
+          <p class="muted small">${t("bp.graphHelp")}</p>
+          <div class="card graph">${graph || "—"}</div>
+          <h2>${t("bp.results")}</h2>
+          <div class="card table-scroll"><table class="list bp-table"><thead><tr><th>${t("bp.paper")}</th><th>${t("bp.statement")}</th><th>${t("bp.uses")}</th><th>${t("tbl.thm")}</th></tr></thead>
+            <tbody>${rows}</tbody></table></div>
+        </div>
+        <aside class="side card pad">
+          <dl>
+            <dt>${t("bp.paper")}</dt><dd><a href="${esc(bp.url)}">arXiv:${esc(bp.arxiv)}</a></dd>
+            <dt>${t("t.mission")}</dt><dd>${m ? `<a href="#/missions/${m.id}">${esc(loc(m, "title"))}</a>` : "—"}</dd>
+            <dt>${t("bp.progress")}</dt><dd>${t("bp.formalized", results.filter((it) => it.theorem).length, results.filter((it) => it.kind !== "definition").length)}</dd>
+            ${bp.issue ? `<dt>${t("bp.request")}</dt><dd><a href="${ghUrl(`/issues/${bp.issue}`)}">#${bp.issue}</a></dd>` : ""}
+          </dl>
+          <h3 style="margin-top:20px">${t("m.help")}</h3>
+          <p class="small">${t("m.oneLine")}</p>
+          ${codeBlock(t("agent.blueprint", siteBase(), bp.id), false)}
+          <p class="small"><a href="blueprints/${esc(bp.id)}/BLUEPRINT.md">BLUEPRINT.md</a> · <a href="api/blueprints/${esc(bp.id)}.json">JSON</a></p>
         </aside>
       </div>`;
   }
@@ -672,6 +824,8 @@
       case "start": html = await viewStart(); title = t("nav.start"); break;
       case "about": html = await viewAbout(); title = t("footer.how"); break;
       case "propose": html = viewPropose(); title = t("nav.propose"); break;
+      case "arxiv": html = viewArxiv(q); title = t("nav.arxiv"); break;
+      case "blueprints": html = await viewBlueprint(parts[1]); title = t("bp.kicker"); break;
       default: html = notFound();
     }
     document.title = title ? `${title} · Lean4All` : "Lean4All";
@@ -698,6 +852,14 @@
     }
     const ms = document.getElementById("msort");
     if (ms) ms.addEventListener("change", (e) => setQ("sort", e.target.value));
+    if (page === "arxiv") {
+      document.getElementById("axform").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const v = document.getElementById("axid").value.trim();
+        location.hash = `#/arxiv${v ? "?id=" + enc(v) : ""}`;
+      });
+      loadPending();
+    }
     if (page === "propose") { document.getElementById("pform").addEventListener("input", proposeOutput); proposeOutput(); }
   }
 

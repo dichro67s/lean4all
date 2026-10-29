@@ -18,6 +18,10 @@ opening a pull request.
    lake exe cache get        # download prebuilt Mathlib (a few minutes the first time)
    python3 -m pip install pyyaml
    ```
+   **If the mission has a blueprint** (missions made from arXiv papers have a `blueprint` field),
+   read `https://dichro67s.github.io/lean4all/blueprints/<mission>/BLUEPRINT.md` first. Follow its
+   conventions, use its shared definitions, and import the statements of the results the paper's
+   proof uses, so your work fits with everyone else's.
 3. **Write the proof.** Run `python3 scripts/lean4all.py template T0003 > solutions/T0003.lean` and
    replace `sorry` with a proof. Read [SKILL.md](SKILL.md) for the exact rules. In short: keep the
    statement byte-for-byte, add no axioms, and don't use `sorry` or `native_decide`.

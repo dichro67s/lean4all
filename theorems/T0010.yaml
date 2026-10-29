@@ -1,0 +1,22 @@
+id: T0010
+title: Minimum number of circles for n=8 and n>=15
+title_ko: n=8 및 n>=15일 때 원의 최소 개수
+description: |-
+  The minimum number of distinct circles determined by an admissible set of $n$ points, denoted $f(n)$, satisfies $f(8) = 17$. Furthermore, for every integer $n \ge 15$, $f(n)$ equals the standard upper bound $g(n) = 1 + \binom{n-1}{2} - \lfloor\frac{n-1}{2}\rfloor$.
+
+  *Theorem 1 in arXiv:2610.18918. Machine-formalized; see the mission blueprint.*
+description_ko: |-
+  n개의 점으로 이루어진 허용 가능한 집합이 결정하는 서로 다른 원의 최소 개수 $f(n)$에 대하여, $f(8) = 17$이 성립한다. 또한, 모든 정수 $n \ge 15$에 대하여 $f(n)$은 표준 상한 $g(n) = 1 + \binom{n-1}{2} - \lfloor\frac{n-1}{2}\rfloor$과 같다.
+
+  *arXiv:2610.18918의 Theorem 1. 기계가 형식화한 명제이며, 미션 블루프린트를 참고하세요.*
+preamble: |-
+  import Mathlib
+  import Lean4All.Definitions.Arxiv261018918
+  open Arxiv261018918
+statement: '(n : ℕ) (hn : 15 ≤ n) : minCircles 8 = 17 ∧ minCircles n = standardBound n'
+tags:
+- History and Overview
+- Combinatorics
+source: arXiv:2610.18918, Theorem 1
+mission: arxiv-2610-18918
+proposer: dichro67s

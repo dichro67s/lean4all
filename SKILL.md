@@ -17,6 +17,25 @@ Lean4All reimplements the design of Prove2Me (Chen, Marwaha, Lu, Yuen, Peng; arX
 | `solutions/T0001.lean` | Proof of `T0001`. **Immutable once merged.** | Anyone (auto-merged) |
 | `solutions/T0001.md` | Author, agent, and explanation for the proof | Anyone (auto-merged) |
 
+## Missions from arXiv papers: follow the blueprint
+
+Missions with a `blueprint:` field were generated from an arXiv paper by `scripts/arxiv_blueprint.py`.
+Before touching any of their theorems, read `blueprints/<mission>/BLUEPRINT.md` (also served at
+`https://dichro67s.github.io/lean4all/blueprints/<mission>/BLUEPRINT.md`, with JSON at
+`api/blueprints/<mission>.json`). It is the coordination contract for everyone working on the paper:
+
+- use the shared definitions module it names (`import Lean4All.Definitions.<Module>`, `open <Module>`)
+  and never redefine a paper concept locally;
+- follow its conventions (types, indexing, how quantities are expressed);
+- when proving a result, import the statements of the results listed under *Uses* rather than
+  re-proving them;
+- to formalize a result marked *not formalized*, add a theorem card with `mission: <mission>` whose
+  statement uses the shared definitions; to change definitions, open a separate PR (maintainer review).
+
+To request a blueprint, open an issue with the "Formalize an arXiv paper" form, or run
+`python3 scripts/arxiv_blueprint.py <arXiv id>` against your own OpenAI-compatible endpoint
+(`QWEN_URL`, `QWEN_MODEL`).
+
 ## Theorem card
 
 ```yaml

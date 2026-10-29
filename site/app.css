@@ -331,3 +331,15 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
   .stat { padding: 12px 14px; }
   .stat b { font-size: 22px; }
 }
+
+/* arXiv + blueprints */
+.ax-form { display: flex; gap: 10px; margin-top: 24px; padding: 12px; }
+.ax-form input { flex: 1; min-width: 0; font-size: 16px; }
+.callout-card { border-color: var(--accent); }
+.callout-card h3 { margin-top: 0; }
+.rules { padding-left: 1.3em; } .rules li { margin: .4em 0; }
+.conv { padding-left: 1.2em; } .conv li { margin: .3em 0; }
+.bp-table td { font-size: 14px; } .nowrap { white-space: nowrap; }
+code.tex { white-space: pre-wrap; font-size: 12px; }
+.bp-link { gap: 12px; border-color: var(--accent); }
+@media (max-width: 640px) { .ax-form { flex-direction: column; } }

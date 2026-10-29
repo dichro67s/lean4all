@@ -1,0 +1,23 @@
+{
+  "id": "T0010",
+  "hash": "0f45685c1185f3ba",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-29T23:05:59+00:00",
+  "en": "For every natural number $n$ with $n \\ge 15$, the minimum number of distinct circles determined by an admissible set of 8 points is 17, and the minimum number of distinct circles determined by an admissible set of $n$ points is equal to the standard bound $1 + \\binom{n-1}{2} - \\lfloor\\frac{n-1}{2}\\rfloor$.",
+  "ko": "$n \\ge 15$인 모든 자연수 $n$에 대하여, 8개의 점으로 이루어진 허용 가능한 점 집합이 결정하는 서로 다른 원의 최소 개수는 17이며, $n$개의 점으로 이루어진 허용 가능한 점 집합이 결정하는 서로 다른 원의 최소 개수는 표준 상한 $1 + \\binom{n-1}{2} - \\lfloor\\frac{n-1}{2}\\rfloor$과 같다.",
+  "caveats_en": [
+    "The term 'admissible' means the set of points is neither collinear nor concyclic.",
+    "The standard bound uses natural number subtraction and division, which truncate to zero and floor respectively, though for $n \\ge 15$ these operations behave as expected in standard arithmetic.",
+    "The minimum is defined as the infimum of the set of possible circle counts for admissible sets of size $n$."
+  ],
+  "caveats_ko": [
+    "'허용 가능한(admissible)' 점 집합이란 일직선 위에 있지 않고 하나의 원 위에 있지 않은 집합을 의미한다.",
+    "표준 상한 공식의 뺄셈과 나눗셈은 자연수 연산이므로 절단(truncation) 및 내림(floor)이 적용되지만, $n \\ge 15$인 경우 일반적인 산술과 동일한 결과를 준다.",
+    "최소 개수는 크기 $n$인 허용 가능한 점 집합들이 만들 수 있는 원의 개수 집합의 하한(infimum)으로 정의된다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement correctly formalizes the human description: it asserts that minCircles 8 = 17 and that for all n >= 15, minCircles n equals the standard bound. The definitions of minCircles and standardBound align with the description's f(n) and g(n).",
+    "note_ko": "Lean 문장은 인간 설명을 정확히 형식화합니다: minCircles 8 = 17이며, 모든 n >= 15에 대해 minCircles n이 표준 상한과 같다고 주장합니다. minCircles와 standardBound의 정의는 설명의 f(n)과 g(n)과 일치합니다."
+  }
+}

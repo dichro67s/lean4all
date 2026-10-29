@@ -1,0 +1,187 @@
+{
+  "id": "arxiv-2610-18918",
+  "arxiv": "2610.18918",
+  "title": "Short Proofs for the Minimum Number of Determined Circles",
+  "title_ko": "결정된 원의 최소 개수에 대한 짧은 증명",
+  "authors": [
+    "Stijn Cambie",
+    "Denis Paliy",
+    "Rafał Wrona"
+  ],
+  "abstract": "We present short proofs for the main parts of the recently completed solution of Erdős Problem 506, which asks for the minimum number of distinct circles determined by a finite planar point set that is neither collinear nor concyclic. An inversion argument and a seven-point line lemma show that eight points determine at least $17$ circles, and an explicit configuration attains this bound. A single argument combining Melchior's inequality with Langer's incidence bound establishes the sharp formula for every $n\\ge15$. The proofs give concise alternatives to longer arguments in the recent literature; the remaining finite cases are cited separately.",
+  "categories": [
+    "math.HO",
+    "math.CO"
+  ],
+  "url": "https://arxiv.org/abs/2610.18918",
+  "published": "2026-10-12",
+  "mission": "arxiv-2610-18918",
+  "module": "Arxiv261018918",
+  "preamble": "import Mathlib\nimport Lean4All.Definitions.Arxiv261018918\nopen Arxiv261018918",
+  "source_kind": "latex",
+  "model": "Qwen3.8-Flash-Next",
+  "issue": null,
+  "generated": "2026-10-29T23:01:58+00:00",
+  "conventions": [
+    "Use `EuclideanSpace ℝ (Fin 2)` for the real plane. Points are elements of this type.",
+    "Represent finite point sets as `Finset (EuclideanSpace ℝ (Fin 2))`.",
+    "Use `SimpleGraph` or explicit `Finset` of lines/circles for incidence structures if needed, but prefer direct set-theoretic definitions for clarity in this combinatorial geometry context.",
+    "Define 'admissible' point sets explicitly: non-collinear and non-concyclic.",
+    "Use `Nat` for cardinalities and indices. Use `ℝ` for coordinates and distances.",
+    "Inversion is a map `EuclideanSpace ℝ (Fin 2) → EuclideanSpace ℝ (Fin 2)`; define it explicitly with center and radius (usually unit radius).",
+    "Lines and circles are represented by their defining equations or geometric objects in Mathlib (`AffineSubspace` for lines, `Metric.sphere` or custom `Circle` structure for circles).",
+    "Use `Finset.card` for counting points, lines, and circles.",
+    "Asymptotic statements are not used; all bounds are exact integer inequalities.",
+    "Use `Nat.choose` for binomial coefficients."
+  ],
+  "conventions_ko": [
+    "실수 평면은 `EuclideanSpace ℝ (Fin 2)`로 표현한다. 점은 이 타입의 원소이다.",
+    "유한 점 집합은 `Finset (EuclideanSpace ℝ (Fin 2))`로 표현한다.",
+    "직선과 원의 교차 구조가 필요하면 `SimpleGraph`나 명시적인 `Finset`을 사용하되, 조합기하학적 맥락에서는 명확성을 위해 집합론적 정의를 우선한다.",
+    "'허용된(admissible)' 점 집합을 명시적으로 정의한다: 공선점이 아니며 공원점도 아니다.",
+    "기수 및 인덱스는 `Nat`을, 좌표 및 거리는 `ℝ`을 사용한다.",
+    "반전(inversion)은 `EuclideanSpace ℝ (Fin 2) → EuclideanSpace ℝ (Fin 2)` 사상이다. 중심과 반지름(보통 단위 반지름)을 사용하여 명시적으로 정의한다.",
+    "직선과 원은 정의 방정식이나 Mathlib의 기하학적 객체(직선은 `AffineSubspace`, 원은 `Metric.sphere` 또는 사용자 정의 `Circle` 구조체)로 표현한다.",
+    "점, 직선, 원의 개수를 셀 때 `Finset.card`를 사용한다.",
+    "점근적 진술은 사용하지 않으며, 모든 상한은 정확한 정수 부등식이다.",
+    "이항계수는 `Nat.choose`를 사용한다."
+  ],
+  "notation": [
+    {
+      "paper": "P",
+      "lean": "P : Finset (EuclideanSpace ℝ (Fin 2))"
+    },
+    {
+      "paper": "C(P)",
+      "lean": "numCircles P"
+    },
+    {
+      "paper": "f(n)",
+      "lean": "minCircles n"
+    },
+    {
+      "paper": "g(n)",
+      "lean": "standardBound n"
+    },
+    {
+      "paper": "admissible",
+      "lean": "IsAdmissible P"
+    },
+    {
+      "paper": "collinear",
+      "lean": "Collinear ℝ P"
+    },
+    {
+      "paper": "concyclic",
+      "lean": "Concyclic P"
+    },
+    {
+      "paper": "ordinary line",
+      "lean": "IsOrdinaryLine ℓ P"
+    },
+    {
+      "paper": "three-point line",
+      "lean": "IsThreePointLine ℓ P"
+    },
+    {
+      "paper": "block",
+      "lean": "IsBlock B P"
+    },
+    {
+      "paper": "inversion",
+      "lean": "invert p x"
+    }
+  ],
+  "definitions": "import Mathlib\n\nset_option autoImplicit false\n\nnamespace Arxiv261018918\n\n/-- A finite set of points $P$ is admissible if it is neither collinear nor concyclic. -/\ndef IsAdmissible (P : Finset (EuclideanSpace ℝ (Fin 2))) : Prop :=\n  ¬Collinear ℝ (P : Set (EuclideanSpace ℝ (Fin 2))) ∧\n  ¬∃ (center : EuclideanSpace ℝ (Fin 2)) (radius : ℝ),\n    ∀ p ∈ P, dist p center = radius\n\n/-- The number of distinct circles determined by a set of points $P$. A circle is determined by any non-collinear triple of points in $P$. Distinct circles are counted once even if they contain more than three points from $P$. -/\nnoncomputable def numCircles (P : Finset (EuclideanSpace ℝ (Fin 2))) : ℕ :=\n  Set.ncard { c : Set (EuclideanSpace ℝ (Fin 2)) | \n    (∃ a b d, a ∈ P ∧ b ∈ P ∧ d ∈ P ∧ a ≠ b ∧ b ≠ d ∧ a ≠ d ∧ \n      ¬Collinear ℝ {a, b, d} ∧ a ∈ c ∧ b ∈ c ∧ d ∈ c) ∧\n    (∃ center : EuclideanSpace ℝ (Fin 2), ∃ radius : ℝ, c = Metric.sphere center radius) }\n\n/-- The minimum number of distinct circles determined by an admissible set of $n$ points. -/\nnoncomputable def minCircles (n : ℕ) : ℕ :=\n  sInf { k : ℕ | ∃ P : Finset (EuclideanSpace ℝ (Fin 2)), P.card = n ∧ IsAdmissible P ∧ numCircles P = k }\n\n/-- The upper bound function $g(n) = 1 + \\binom{n-1}{2} - \\lfloor\\frac{n-1}{2}\\rfloor$. -/\ndef standardBound (n : ℕ) : ℕ :=\n  1 + Nat.choose (n - 1) 2 - (n - 1) / 2\n\n/-- The inversion map with respect to a point $p$ (center) and unit radius. Maps a point $x \\neq p$ to $x'$ such that $p, x, x'$ are collinear, $p$ is between $x$ and $x'$ (or $x=x'$), and $\\text{dist } p x \\cdot \\text{dist } p x' = 1$. -/\nnoncomputable def invert (p : EuclideanSpace ℝ (Fin 2)) (x : EuclideanSpace ℝ (Fin 2)) : EuclideanSpace ℝ (Fin 2) :=\n  if x = p then p else\n    let v := x - p\n    let d := ‖v‖\n    p + (1 / d^2) • v\n\nend Arxiv261018918\n",
+  "macros": {
+    "\\ceilfrac": "\\mathopen{}\\left\\lceil\\frac{#1}{#2}\\right\\rceil\\mathclose{}",
+    "\\floorfrac": "\\mathopen{}\\left\\lfloor\\frac{#1}{#2}\\right\\rfloor\\mathclose{}",
+    "\\bceil": "\\left\\lceil #1\\right\\rceil",
+    "\\bfloor": "\\left\\lfloor #1\\right\\rfloor",
+    "\\R": "\\mathbb R",
+    "\\cL": "\\mathcal L",
+    "\\theinnercustomthm": "#1",
+    "\\qedsymbol": "\\(\\diamondsuit\\)",
+    "\\arraystretch": "1.28"
+  },
+  "goal": "thm:main",
+  "milestones": [
+    "lem:seven",
+    "lem:pointed",
+    "thm:main"
+  ],
+  "items": [
+    {
+      "key": "thm:main",
+      "kind": "theorem",
+      "display": "Theorem 1",
+      "number": "1",
+      "name": "",
+      "section": "Introduction",
+      "tex": "The minimum number of circles satisfies\n\\[\n f(8)=17,\\qquad f(n)=g(n)\\quad\\text{for every }n\\ge15.\n\\]",
+      "uses": [],
+      "title_en": "Minimum number of circles for n=8 and n>=15",
+      "title_ko": "n=8 및 n>=15일 때 원의 최소 개수",
+      "statement_en": "The minimum number of distinct circles determined by an admissible set of $n$ points, denoted $f(n)$, satisfies $f(8) = 17$. Furthermore, for every integer $n \\ge 15$, $f(n)$ equals the standard upper bound $g(n) = 1 + \\binom{n-1}{2} - \\lfloor\\frac{n-1}{2}\\rfloor$.",
+      "statement_ko": "n개의 점으로 이루어진 허용 가능한 집합이 결정하는 서로 다른 원의 최소 개수 $f(n)$에 대하여, $f(8) = 17$이 성립한다. 또한, 모든 정수 $n \\ge 15$에 대하여 $f(n)$은 표준 상한 $g(n) = 1 + \\binom{n-1}{2} - \\lfloor\\frac{n-1}{2}\\rfloor$과 같다.",
+      "lean": "(n : ℕ) (hn : 15 ≤ n) : minCircles 8 = 17 ∧ minCircles n = standardBound n",
+      "theorem": "T0010",
+      "note": "The theorem combines two distinct claims: the exact value for n=8 and the equality with the standard bound for n>=15. The Lean statement uses a conjunction to capture both parts under the hypothesis n >= 15, although the first part (n=8) is independent of n. Alternatively, this could be split into two theorems, but the prompt asks for 'ONE result' corresponding to the displayed equation block. The definition of `standardBound` uses integer division `/` which corresponds to floor division for natural numbers in Lean."
+    },
+    {
+      "key": "relatedremark-2",
+      "kind": "remark",
+      "display": "Remark",
+      "number": "",
+      "name": "Initial parallel investigations",
+      "section": "Introduction",
+      "tex": "\\Cref{thm:main} was obtained in the summer of 2026 by (at least) five investigations \nwithin a short period: those of Rafa\\l{} Wrona, Liyan Wang, Stijn Cambie,\nDenis Paliy, and the forum (on~\\cite{Forum506}) user \\texttt{mzn}. These investigations were independent, assuming that their AI use would not influence each other (which is unclear). This paper summarises the main insights from those.\\\\\nThe block-counting/inversion approach for eight points and the uniform\nincidence approach for $n\\ge15$ also appear in~\\cite{Wrona}.\nThe seven-point Lemma~\\ref{lem:seven} and the pointed\nLemma~\\ref{lem:pointed} yield short versions of these arguments.\nThe carrier estimate, inversion count, and Melchior argument after\nadjoining the inversion centre have counterparts in\n\\cite[Lemmas~2.1, 2.2 and 6.1]{Wang}; the proof in~\\cite{Wang} treats\n$n=15$ and $n=16$ separately. Paliy's parallel work~\\cite{PaliyCorrected}\ndeveloped an exact computational and SAT-based approach to the finite\ncases, e.g. $n=12,13$, with reproducible verification files.",
+      "uses": [
+        "lem:pointed",
+        "lem:seven",
+        "thm:main"
+      ],
+      "title_en": null,
+      "title_ko": null,
+      "statement_en": null,
+      "statement_ko": null,
+      "lean": null,
+      "theorem": null,
+      "note": null
+    },
+    {
+      "key": "lem:seven",
+      "kind": "lemma",
+      "display": "Lemma 1",
+      "number": "1",
+      "name": "",
+      "section": "Proof for \\texorpdfstring{$n=8$}{n=8}",
+      "tex": "Seven real planar points with no four collinear determine at most six\nthree-point lines. If there are six, every point outside the set lies\non at most one ordinary line and at most one three-point line.",
+      "uses": [],
+      "title_en": "Three-point lines for seven points",
+      "title_ko": "7개 점에 대한 세 점 직선",
+      "statement_en": "Let $P$ be a set of 7 points in the real plane such that no four points are collinear. Then $P$ determines at most 6 three-point lines. If $P$ determines exactly 6 three-point lines, then for any point $q \\notin P$, $q$ lies on at most one ordinary line (a line containing exactly 2 points of $P$) and at most one three-point line (a line containing exactly 3 points of $P$).",
+      "statement_ko": "실수 평면에서 네 점이 일직선 위에 있지 않은 7개의 점으로 이루어진 집합 $P$가 있다고 하자. 그러면 $P$는 최대 6개의 세 점 직선을 결정한다. 만약 $P$가 정확히 6개의 세 점 직선을 결정한다면, $P$에 속하지 않는 임의의 점 $q$에 대해, $q$는 최대 하나의 보통 직선($P$의 점 정확히 2개를 포함하는 직선)과 최대 하나의 세 점 직선($P$의 점 정확히 3개를 포함하는 직선) 위에 놓인다.",
+      "lean": "(P : Finset (EuclideanSpace ℝ (Fin 2))) (hP : P.card = 7) (hNo4 : ∀ (L : AffineSubspace ℝ (EuclideanSpace ℝ (Fin 2))), L.dim = 1 → (P.filter (fun p => p ∈ (L : Set (EuclideanSpace ℝ (Fin 2))))).card ≤ 3) : (Finset.filter (fun L => (P.filter (fun p => p ∈ (L : Set (EuclideanSpace ℝ (Fin 2))))).card = 3) (Finset.powerset P).biUnion (fun s => if s.card = 3 then {AffineSubspace.span ℝ (s : Set (EuclideanSpace ℝ (Fin 2)))} else ∅)).card ≤ 6 ∧ ((Finset.filter (fun L => (P.filter (fun p => p ∈ (L : Set (EuclideanSpace ℝ (Fin 2))))).card = 3) (Finset.powerset P).biUnion (fun s => if s.card = 3 then {AffineSubspace.span ℝ (s : Set (EuclideanSpace ℝ (Fin 2)))} else ∅)).card = 6 → ∀ q ∉ P, (Finset.filter (fun L => q ∈ (L : Set (EuclideanSpace ℝ (Fin 2))) ∧ (P.filter (fun p => p ∈ (L : Set (EuclideanSpace ℝ (Fin 2))))).card = 2) (Finset.powerset P).biUnion (fun s => if s.card = 2 then {AffineSubspace.span ℝ (s : Set (EuclideanSpace ℝ (Fin 2)))} else ∅)).card ≤ 1 ∧ (Finset.filter (fun L => q ∈ (L : Set (EuclideanSpace ℝ (Fin 2))) ∧ (P.filter (fun p => p ∈ (L : Set (EuclideanSpace ℝ (Fin 2))))).card = 3) (Finset.powerset P).biUnion (fun s => if s.card = 3 then {AffineSubspace.span ℝ (s : Set (EuclideanSpace ℝ (Fin 2)))} else ∅)).card ≤ 1)",
+      "theorem": null,
+      "note": "The previous error was due to missing decidability instances for membership in affine subspaces. In Lean 4/Mathlib, `AffineSubspace` membership is decidable for finite-dimensional spaces over fields with decidable equality, but sometimes explicit coercion or instance hints are needed. However, the primary issue in the previous attempt was likely the complexity of the term or missing imports. The provided signature uses standard Mathlib definitions. Note that `AffineSubspace.span` generates the line through the points. The condition `L.dim = 1` ensures we are looking at lines. The filter logic counts distinct lines determined by subsets of size 2 or 3. The `hNo4` hypothesis ensures no line contains more than 3 points from P, simplifying the classification of lines into ordinary (2 points) and three-point (3 points). Rejected: failed to synthesize instance of type class\n  DecidablePred fun p => p ∈ ↑L\n\nHint: Type class instance resolution failures can be inspected with the `set_option trace.Meta.synthInstance true` command."
+    },
+    {
+      "key": "lem:pointed",
+      "kind": "lemma",
+      "display": "Lemma 2",
+      "number": "2",
+      "name": "",
+      "section": "Proof for \\texorpdfstring{$n\\ge15$}{n >= 15}",
+      "tex": "Let $Q$ be a noncollinear set of $m$ real points, let $o\\notin Q$, and\nlet $\\cL$ be the set of lines spanned by $Q$. With $j_\\ell=|\\ell\\cap Q|$,\n\\[\n \\sum_{\\substack{\\ell\\in\\cL\\\\o\\notin\\ell}}\\frac1{j_\\ell+1}\n \\ge \\frac1{12}\\sum_{\\ell\\in\\cL}j_\\ell-\\frac m9+\\frac12.\n\\]",
+      "uses": [],
+      "title_en": "Inequality for lines not passing through an external point",
+      "title_ko": "외부 점을 지나지 않는 직선들에 대한 부등식",
+      "statement_en": "Let $Q$ be a non-collinear set of $m$ points in the real plane, and let $o$ be a point not in $Q$. Let $\\mathcal{L}$ be the set of lines spanned by pairs of distinct points in $Q$. For each line $\\ell \\in \\mathcal{L}$, let $j_\\ell = |\\ell \\cap Q|$. Then the following inequality holds:\n\\[\n \\sum_{\\substack{\\ell\\in\\mathcal{L}\\\\o\\notin\\ell}}\\frac{1}{j_\\ell+1}\n \\ge \\frac{1}{12}\\sum_{\\ell\\in\\mathcal{L}}j_\\ell-\\frac{m}{9}+\\frac{1}{2}.\n\\]",
+      "statement_ko": "$Q$를 실수 평면 위의 비공선(non-collinear)인 $m$개의 점의 집합이라 하고, $o$를 $Q$에 속하지 않는 점이라 하자. $\\mathcal{L}$을 $Q$의 서로 다른 두 점에 의해 생성되는 직선들의 집합이라 하자. 각 직선 $\\ell \\in \\mathcal{L}$에 대해 $j_\\ell = |\\ell \\cap Q|$라 할 때, 다음 부등식이 성립한다:\n\\[\n \\sum_{\\substack{\\ell\\in\\mathcal{L}\\\\o\\notin\\ell}}\\frac{1}{j_\\ell+1}\n \\ge \\frac{1}{12}\\sum_{\\ell\\in\\mathcal{L}}j_\\ell-\\frac{m}{9}+\\frac{1}{2}.\n\\]",
+      "lean": "(Q : Finset (EuclideanSpace ℝ (Fin 2))) (o : EuclideanSpace ℝ (Fin 2)) (m : ℕ) (hQ : Q.card = m) (ho : o ∉ Q) (hnoncol : ¬Collinear ℝ (Q : Set (EuclideanSpace ℝ (Fin 2)))) : let L : Finset (AffineSubspace ℝ (EuclideanSpace ℝ (Fin 2))) := (Q ×ˢ Q).filter (fun p => p.1 ≠ p.2).image (fun p => AffineSpan ℝ {p.1, p.2}) let j (ℓ : AffineSubspace ℝ (EuclideanSpace ℝ (Fin 2))) : ℕ := (Q ∩ ℓ.carrier).card (L.filter (fun ℓ => o ∉ ℓ.carrier)).sum (fun ℓ => (1 : ℝ) / (j ℓ + 1)) ≥ (1 : ℝ) / 12 * (L.sum (fun ℓ => (j ℓ : ℝ))) - (m : ℝ) / 9 + 1 / 2",
+      "theorem": null,
+      "note": "The set of lines $\\mathcal{L}$ is constructed as the image of the span of pairs of distinct points in $Q$. The sum on the LHS is over lines in $\\mathcal{L}$ that do not contain $o$. The sums are cast to real numbers for the inequality. Rejected: the statement must be only the signature (no `:=`, no proof, no sorry)"
+    }
+  ]
+}

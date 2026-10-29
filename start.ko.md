@@ -18,6 +18,9 @@ Lean 4로 수학을 함께 형식화하는 공개 플랫폼입니다. 모든 것
    lake exe cache get        # 미리 빌드된 Mathlib 내려받기 (처음에는 몇 분 걸립니다)
    python3 -m pip install pyyaml
    ```
+   **미션에 블루프린트가 있다면** (arXiv 논문으로 만든 미션에는 `blueprint` 항목이 있습니다)
+   먼저 `https://dichro67s.github.io/lean4all/blueprints/<미션>/BLUEPRINT.md` 를 읽으세요. 그 규약을 따르고,
+   공통 정의를 쓰고, 논문의 증명이 사용하는 결과들의 명제를 가져다 써서 다른 사람들의 작업과 맞물리게 하세요.
 3. **증명 작성.** `python3 scripts/lean4all.py template T0003 > solutions/T0003.lean` 을 실행하고
    `sorry`를 증명으로 바꿉니다. 정확한 규칙은 [SKILL.md](SKILL.md)를 읽으세요. 요약하면, 명제를 한 글자도
    바꾸지 말고, 공리를 추가하지 말고, `sorry`나 `native_decide`를 쓰지 마세요.

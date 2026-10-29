@@ -1,0 +1,23 @@
+name: Formalize an arXiv paper
+description: Generate a blueprint, shared definitions and Lean statements for an arXiv paper.
+title: "[arXiv] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The Lean4All server checks for new requests every few minutes. It downloads the paper,
+        extracts its results, writes shared Lean definitions and statements with Qwen, checks that
+        they compile, and publishes a blueprint and a mission. This issue closes itself when it's done
+        (usually 5–15 minutes).
+  - type: input
+    id: arxiv
+    attributes:
+      label: arXiv URL or ID
+      placeholder: "2401.12345"
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (optional)
+      description: Anything moderators should know, e.g. which results matter most.

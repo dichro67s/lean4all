@@ -212,7 +212,7 @@ def load_missions() -> tuple[dict[str, dict], dict[str, list[str]]]:
         if m.get("id") != mid:
             errs.append("field `id` must match the file name")
         for field in ("title", "type", "captain", "summary", "goal"):
-            if not m.get(field):
+            if not m.get(field) and not (field == "goal" and m.get("blueprint")):
                 errs.append(f"missing field `{field}`")
         for i, ms in enumerate(m.get("milestones") or []):
             if not isinstance(ms, dict) or not ms.get("title"):
@@ -671,7 +671,7 @@ def site(lean: bool) -> None:
         mission_list.append({
             **{k: m.get(k) for k in ("id", "title", "title_ko", "type", "tags", "captain", "summary",
                                     "summary_ko", "description", "description_ko", "source", "goal",
-                                    "reviewed")},
+                                    "reviewed", "blueprint")},
             "milestones": ms, "theorems": members, "created": created, "updated": last,
             "completed": goal_status in ("proved", "disproved"), "goal_status": goal_status,
             "contributors": sorted(p for p in people if p),
@@ -703,6 +703,20 @@ def site(lean: bool) -> None:
     for u in users.values():
         u["score"] = 10 * u["proved"] + 10 * u["disproved"] + 3 * u["sketched"] + 2 * u["imported"] + u["proposed"]
 
+    blueprints = []
+    for path in sorted((ROOT / "blueprints").glob("*/blueprint.json")):
+        bp = json.loads(path.read_text(encoding="utf-8"))
+        for it in bp["items"]:
+            th = by_id.get(it.get("theorem") or "")
+            it["status"] = th["status"] if th else None
+        formal = [it for it in bp["items"] if it.get("theorem")]
+        bp["counts"] = {"results": sum(1 for it in bp["items"] if it.get("lean") is not None or it.get("theorem")
+                                       or it["kind"] in ("theorem", "lemma", "proposition", "corollary", "claim",
+                                                         "conjecture", "fact", "observation")),
+                        "formalized": len(formal),
+                        "proved": sum(1 for it in formal if it["status"] in ("proved", "disproved"))}
+        blueprints.append(bp)
+
     counts = {s: sum(1 for t in theorems if t["status"] == s)
               for s in ("proved", "disproved", "sketched", "blocked", "open", "invalid")}
     data = {
@@ -713,6 +727,8 @@ def site(lean: bool) -> None:
         "stats": {"missions": len(mission_list), "theorems": len(theorems), **counts,
                   "contributors": len(users)},
         "missions": mission_list, "theorems": theorems,
+        "blueprints": [{k: bp.get(k) for k in ("id", "arxiv", "title", "title_ko", "authors", "mission",
+                                               "generated", "counts", "url", "issue")} for bp in blueprints],
         "users": sorted(users.values(), key=lambda u: -u["score"]),
         "activity": sorted(activity, key=lambda a: a["date"], reverse=True)[:200],
     }
@@ -738,6 +754,13 @@ def site(lean: bool) -> None:
         (api / "theorems" / f"{t['id']}.json").write_text(json.dumps(t, ensure_ascii=False))
     for m in mission_list:
         (api / "missions" / f"{m['id']}.json").write_text(json.dumps(m, ensure_ascii=False))
+    (api / "blueprints").mkdir(parents=True)
+    for bp in blueprints:
+        (api / "blueprints" / f"{bp['id']}.json").write_text(json.dumps(bp, ensure_ascii=False))
+        md = ROOT / "blueprints" / bp["id"] / "BLUEPRINT.md"
+        if md.exists():
+            (SITE_OUT / "blueprints" / bp["id"]).mkdir(parents=True, exist_ok=True)
+            shutil.copy(md, SITE_OUT / "blueprints" / bp["id"] / "BLUEPRINT.md")
     for doc in ("start.md", "start.ko.md", "SKILL.md", "CONTRIBUTING.md", "CONTRIBUTING.ko.md"):
         shutil.copy(ROOT / doc, SITE_OUT / doc)
     (SITE_OUT / ".nojekyll").write_text("")

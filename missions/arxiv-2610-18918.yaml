@@ -1,0 +1,59 @@
+id: arxiv-2610-18918
+title: Short Proofs for the Minimum Number of Determined Circles
+title_ko: 결정된 원의 최소 개수에 대한 짧은 증명
+type: Research Paper
+tags:
+- History and Overview
+- Combinatorics
+captain: dichro67s
+reviewed: false
+summary: This paper provides short proofs for the minimum number of circles determined by n points in
+  the plane that are neither collinear nor concyclic, establishing f(8)=17 and f(n)=g(n) for n≥15.
+summary_ko: 이 논문은 평면에서 공선점도 공원점도 아닌 n개의 점이 결정하는 원의 최소 개수에 대한 짧은 증명을 제시하며, f(8)=17 및 n≥15에 대해 f(n)=g(n)임을
+  증명한다.
+description: |-
+  We present short proofs for the main parts of the recently completed solution of Erdős Problem 506, which asks for the minimum number of distinct circles determined by a finite planar point set that is neither collinear nor concyclic. An inversion argument and a seven-point line lemma show that eight points determine at least $17$ circles, and an explicit configuration attains this bound. A single argument combining Melchior's inequality with Langer's incidence bound establishes the sharp formula for every $n\ge15$. The proofs give concise alternatives to longer arguments in the recent literature; the remaining finite cases are cited separately.
+
+  **Machine-generated blueprint.** The formal statements were written by Qwen and compile against Mathlib, but a moderator has not checked them against the paper yet. Read the blueprint before contributing.
+description_ko: |-
+  **기계가 생성한 블루프린트입니다.** 형식 명제는 Qwen이 작성했고 Mathlib에서 컴파일되지만, 아직 운영자가 논문과 대조하지 않았습니다. 기여하기 전에 블루프린트를 먼저 읽으세요.
+
+  이 논문은 평면에서 공선점도 공원점도 아닌 n개의 점이 결정하는 원의 최소 개수에 대한 짧은 증명을 제시하며, f(8)=17 및 n≥15에 대해 f(n)=g(n)임을 증명한다.
+source:
+  title: Stijn Cambie, Denis Paliy, Rafał Wrona, Short Proofs for the Minimum Number of Determined Circles
+    (arXiv:2610.18918)
+  url: https://arxiv.org/abs/2610.18918
+goal: T0010
+blueprint: arxiv-2610-18918
+milestones:
+- title: 'Lemma 1: Three-point lines for seven points'
+  title_ko: 'Lemma 1: 7개 점에 대한 세 점 직선'
+  statement: Let $P$ be a set of 7 points in the real plane such that no four points are collinear. Then
+    $P$ determines at most 6 three-point lines. If $P$ determines exactly 6 three-point lines, then for
+    any point $q \notin P$, $q$ lies on at most one ordinary line (a line containing exactly 2 points
+    of $P$) and at most one three-point line (a line containing exactly 3 points of $P$).
+  statement_ko: 실수 평면에서 네 점이 일직선 위에 있지 않은 7개의 점으로 이루어진 집합 $P$가 있다고 하자. 그러면 $P$는 최대 6개의 세 점 직선을 결정한다. 만약
+    $P$가 정확히 6개의 세 점 직선을 결정한다면, $P$에 속하지 않는 임의의 점 $q$에 대해, $q$는 최대 하나의 보통 직선($P$의 점 정확히 2개를 포함하는 직선)과
+    최대 하나의 세 점 직선($P$의 점 정확히 3개를 포함하는 직선) 위에 놓인다.
+- title: 'Lemma 2: Inequality for lines not passing through an external point'
+  title_ko: 'Lemma 2: 외부 점을 지나지 않는 직선들에 대한 부등식'
+  statement: |-
+    Let $Q$ be a non-collinear set of $m$ points in the real plane, and let $o$ be a point not in $Q$. Let $\mathcal{L}$ be the set of lines spanned by pairs of distinct points in $Q$. For each line $\ell \in \mathcal{L}$, let $j_\ell = |\ell \cap Q|$. Then the following inequality holds:
+    \[
+     \sum_{\substack{\ell\in\mathcal{L}\\o\notin\ell}}\frac{1}{j_\ell+1}
+     \ge \frac{1}{12}\sum_{\ell\in\mathcal{L}}j_\ell-\frac{m}{9}+\frac{1}{2}.
+    \]
+  statement_ko: |-
+    $Q$를 실수 평면 위의 비공선(non-collinear)인 $m$개의 점의 집합이라 하고, $o$를 $Q$에 속하지 않는 점이라 하자. $\mathcal{L}$을 $Q$의 서로 다른 두 점에 의해 생성되는 직선들의 집합이라 하자. 각 직선 $\ell \in \mathcal{L}$에 대해 $j_\ell = |\ell \cap Q|$라 할 때, 다음 부등식이 성립한다:
+    \[
+     \sum_{\substack{\ell\in\mathcal{L}\\o\notin\ell}}\frac{1}{j_\ell+1}
+     \ge \frac{1}{12}\sum_{\ell\in\mathcal{L}}j_\ell-\frac{m}{9}+\frac{1}{2}.
+    \]
+- title: 'Theorem 1: Minimum number of circles for n=8 and n>=15'
+  title_ko: 'Theorem 1: n=8 및 n>=15일 때 원의 최소 개수'
+  statement: The minimum number of distinct circles determined by an admissible set of $n$ points, denoted
+    $f(n)$, satisfies $f(8) = 17$. Furthermore, for every integer $n \ge 15$, $f(n)$ equals the standard
+    upper bound $g(n) = 1 + \binom{n-1}{2} - \lfloor\frac{n-1}{2}\rfloor$.
+  statement_ko: n개의 점으로 이루어진 허용 가능한 집합이 결정하는 서로 다른 원의 최소 개수 $f(n)$에 대하여, $f(8) = 17$이 성립한다. 또한, 모든 정수
+    $n \ge 15$에 대하여 $f(n)$은 표준 상한 $g(n) = 1 + \binom{n-1}{2} - \lfloor\frac{n-1}{2}\rfloor$과 같다.
+  theorem: T0010
