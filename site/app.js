@@ -498,71 +498,104 @@
       try { bpCache[id] = await (await fetch(`api/blueprints/${id}.json`, { cache: "no-cache" })).json(); } catch { return notFound(); }
     }
     const bp = bpCache[id], ko = LANG === "ko";
+    const empty = bp.status === "no-results";
     const bykey = Object.fromEntries(bp.items.map((it) => [it.key, it]));
-    const results = bp.items.filter((it) => it.kind !== "remark" && it.kind !== "example" && it.kind !== "other");
-    const mdm = (x, inline) => md(x, inline);
-    const rows = results.map((it) => {
+    const results = bp.items.filter((it) => !["remark", "example", "other", "definition"].includes(it.kind));
+    const defsItems = bp.items.filter((it) => it.kind === "definition");
+    const formal = results.filter((it) => it.theorem && TH[it.theorem]);
+    const proved = formal.filter((it) => done(TH[it.theorem].status));
+    const m = bp.mission && MI[bp.mission];
+
+    // ---- main: join card
+    const stat = (n, label, cls = "") => `<div class="bp-stat ${cls}"><b>${n}</b><span>${label}</span></div>`;
+    const join = empty ? `<div class="card pad bp-hero-card"><p style="margin:0">${t("bp.none")}</p>
+        <div class="row" style="margin-top:14px"><a class="btn" href="${esc(bp.url)}">arXiv:${esc(bp.arxiv)}</a>
+        ${bp.issue ? `<a class="btn" href="${ghUrl(`/issues/${bp.issue}`)}">${t("bp.request")} #${bp.issue}</a>` : ""}</div></div>`
+      : `<div class="card bp-hero-card">
+        <div class="bp-hero-grid">
+          <div class="bp-hero-left">
+            <h2>${t("bp.join.t")}</h2>
+            <p class="muted">${t("bp.join.d")}</p>
+            ${codeBlock(t("agent.blueprint", siteBase(), bp.id), false)}
+            <div class="row" style="margin-top:12px">
+              ${m ? `<a class="btn btn-primary" href="#/missions/${m.id}">${t("bp.openMission")}</a>` : ""}
+              <a class="btn" href="${esc(bp.url)}" target="_blank" rel="noopener">arXiv:${esc(bp.arxiv)}</a>
+              <a class="btn" href="blueprints/${esc(bp.id)}/BLUEPRINT.md">BLUEPRINT.md</a>
+            </div>
+          </div>
+          <div class="bp-hero-right">
+            <div class="bp-stats">${stat(results.length, t("bp.stat.results"))}${stat(formal.length, t("bp.stat.formalized"), "sk")}${stat(proved.length, t("bp.stat.proved"), "ok")}</div>
+            ${bar({ total: results.length, proved: proved.length, sketched: formal.length - proved.length })}
+            <p class="small muted" style="margin:10px 0 0">${t("bp.hint")}</p>
+          </div>
+        </div>
+      </div>`;
+
+    // ---- main: results as cards
+    const card = (it) => {
       const th = it.theorem && TH[it.theorem];
       const title = (ko && it.title_ko) || it.title_en || it.name || "";
       const stmt = (ko && it.statement_ko) || it.statement_en;
-      const uses = (it.uses || []).filter((u) => bykey[u]).map((u) => `<a href="#bp-${esc(u)}">${esc(bykey[u].display)}</a>`).join(", ");
-      return `<tr id="bp-${esc(it.key)}"><td class="nowrap"><b>${esc(it.display)}</b>${it.name ? `<div class="small muted">${esc(it.name)}</div>` : ""}</td>
-        <td>${title ? `<div><b>${esc(title)}</b></div>` : ""}<div class="prose small">${stmt ? mdm(stmt) : `<code class="tex">${esc(it.tex.slice(0, 400))}</code>`}</div>
-          ${it.theorem ? `<details class="informal-cav"><summary>Lean</summary><pre class="code" style="margin-top:6px"><code>${hl(`theorem ${it.theorem} ${it.lean}`)}</code></pre></details>`
-            : (it.kind === "definition" ? "" : `<div class="small muted" style="margin-top:4px">${t("bp.notFormal")}${it.note ? ": " + esc(it.note.slice(0, 220)) : ""}</div>`)}</td>
-        <td class="small">${uses || "—"}</td>
-        <td>${th ? `${thmLink(th.id)}<div style="margin-top:4px">${chip(th.status)}</div>` : (it.kind === "definition" ? `<span class="tag">${t("bp.def")}</span>` : "—")}</td></tr>`;
-    }).join("");
-    const gIds = results.filter((it) => it.kind !== "definition").map((it) => it.key);
-    const graph = graphSvg(gIds, (k) => bykey[k].uses, (k) => {
+      const uses = (it.uses || []).filter((u) => bykey[u]).map((u) => `<a href="#bp-${esc(u)}" data-jump="bp-${esc(u)}">${esc(bykey[u].display)}</a>`).join(", ");
+      return `<div class="card bp-item ${th ? "" : "bp-item-todo"}" id="bp-${esc(it.key)}">
+        <div class="row"><b>${esc(it.display)}</b>${it.name ? `<span class="muted small">${esc(it.name)}</span>` : ""}<span class="spacer"></span>
+          ${th ? `${thmLink(th.id)} ${chip(th.status)}` : `<span class="tag">${t("bp.notFormal")}</span>`}</div>
+        ${title ? `<div class="bp-item-title">${esc(title)}</div>` : ""}
+        <div class="prose small">${stmt ? md(stmt) : `<code class="tex">${esc(it.tex.slice(0, 400))}</code>`}</div>
+        ${uses ? `<div class="small muted">${t("bp.uses")}: ${uses}</div>` : ""}
+        ${th ? `<details class="informal-cav"><summary>Lean</summary><pre class="code" style="margin-top:6px"><code>${hl(`theorem ${th.id} ${it.lean}`)}</code></pre></details>` : ""}
+      </div>`;
+    };
+    const gIds = results.map((it) => it.key);
+    const graph = results.length > 1 ? graphSvg(gIds, (k) => bykey[k].uses, (k) => {
       const it = bykey[k], th = it.theorem && TH[it.theorem];
       return { href: th ? `#/theorems/${th.id}` : null, title: (ko && it.title_ko) || it.title_en || it.name || it.display,
         sub: `${it.display}${th ? " · " + th.id + " · " + stName(th.status) : " · " + t("bp.notFormal")}`,
         color: th ? stColor(th.status) : "open", dashed: !th, tip: it.display };
-    });
+    }) : "";
+
+    // ---- side: details, collapsed
     const conv = (ko && bp.conventions_ko?.length ? bp.conventions_ko : bp.conventions) || [];
-    const m = MI[bp.mission];
+    const nDefs = (bp.definitions.match(/^\s*(?:noncomputable\s+)?(?:def|abbrev|structure|inductive)\s/gm) || []).length;
+    const box = (title, count, body, open = false) => `<details class="bp-detail card" ${open ? "open" : ""}>
+        <summary><span>${title}</span>${count !== null ? `<span class="tag">${count}</span>` : ""}</summary><div class="bp-detail-body">${body}</div></details>`;
+    const details = [
+      empty ? "" : box(t("bp.rules"), null, `<ol class="rules small">
+        <li>${bp.module ? t("bp.r1", bp.module) : t("bp.r1none")}</li><li>${t("bp.r2")}</li><li>${t("bp.r3", bp.mission)}</li><li>${t("bp.r4")}</li></ol>`),
+      conv.length ? box(t("bp.conv"), conv.length, `<ul class="conv small">${conv.map((c) => `<li>${md(c, true)}</li>`).join("")}</ul>`) : "",
+      bp.notation?.length ? box(t("bp.notation"), bp.notation.length, `<table class="list small">${bp.notation.map((n) =>
+        `<tr><td>${md(n.paper.includes("$") ? n.paper : `$${n.paper}$`, true)}</td><td><code>${esc(n.lean)}</code></td></tr>`).join("")}</table>`) : "",
+      bp.definitions ? box(t("bp.defs"), nDefs, `<p class="small muted"><code>import Lean4All.Definitions.${esc(bp.module)}</code></p>${codeBlock(bp.definitions)}
+        <p class="small"><a href="${ghUrl(`/blob/${D.branch}/definitions/${bp.module}.lean`)}">definitions/${esc(bp.module)}.lean</a></p>`) : "",
+      defsItems.length ? box(t("bp.paperDefs"), defsItems.length, defsItems.map((it) =>
+        `<p class="small"><b>${esc(it.display)}</b>${it.name ? " (" + esc(it.name) + ")" : ""}<br><code class="tex">${esc(it.tex.slice(0, 300))}</code></p>`).join("")) : "",
+      box(t("bp.about"), null, `<dl class="small">
+        <dt>${t("bp.paper")}</dt><dd><a href="${esc(bp.url)}">arXiv:${esc(bp.arxiv)}</a></dd>
+        ${bp.issue ? `<dt>${t("bp.request")}</dt><dd><a href="${ghUrl(`/issues/${bp.issue}`)}">#${bp.issue}</a></dd>` : ""}
+        <dt>${t("bp.generated")}</dt><dd>${esc(bp.model)}, ${new Date(bp.generated).toLocaleDateString(LANG)}</dd></dl>
+        ${empty ? "" : `<p class="small muted">${t("bp.machine", bp.model, new Date(bp.generated).toLocaleDateString(LANG))}</p>`}
+        <p class="small"><a href="api/blueprints/${esc(bp.id)}.json">JSON</a> · <a href="blueprints/${esc(bp.id)}/BLUEPRINT.md">BLUEPRINT.md</a></p>`),
+    ].join("");
+
     return `
       <div class="crumbs"><a href="#/arxiv">${t("nav.arxiv")}</a> / arXiv:${esc(bp.arxiv)}</div>
       <div class="detail-head">
-        <div class="row"><span class="label">${t("bp.kicker")}</span><span class="tag">arXiv:${esc(bp.arxiv)}</span></div>
+        <div class="row"><span class="label">${t("bp.kicker")}</span>${bp.reviewed ? "" : `<span class="tag">${t("bp.unreviewed")}</span>`}</div>
         <h1>${esc((ko && bp.title_ko) || bp.title)}</h1>
         <p class="muted" style="margin:0">${esc(bp.authors.join(", "))}</p>
       </div>
-      <div class="two-col">
+      ${join}
+      ${empty ? `<div class="bp-side bp-side-wide" style="margin-top:28px"><div class="label">${t("bp.details")}</div>${details}</div>` : `
+      <div class="two-col" style="margin-top:28px">
         <div>
-          ${bp.status === "no-results" ? `<p class="callout">${t("bp.none")}</p>` : `
-          <p class="callout small">${t("bp.machine", bp.model, new Date(bp.generated).toLocaleDateString(LANG))}</p>
-          <h2>${t("bp.rules")}</h2>
-          <ol class="rules">
-            <li>${bp.module ? t("bp.r1", bp.module) : t("bp.r1none")}</li>
-            <li>${t("bp.r2")}</li><li>${t("bp.r3", bp.mission)}</li><li>${t("bp.r4")}</li>
-          </ol>`}
-          <h2>${t("bp.conv")}</h2>
-          <ul class="conv">${conv.map((c) => `<li>${mdm(c, true)}</li>`).join("")}</ul>
-          ${bp.notation?.length ? `<h2>${t("bp.notation")}</h2><div class="card table-scroll"><table class="list"><thead><tr><th>${t("bp.paper")}</th><th>Lean</th></tr></thead><tbody>
-            ${bp.notation.map((n) => `<tr><td>${mdm(n.paper.includes("$") ? n.paper : `$${n.paper}$`, true)}</td><td><code>${esc(n.lean)}</code></td></tr>`).join("")}</tbody></table></div>` : ""}
-          ${bp.definitions ? `<h2>${t("bp.defs")}</h2><p class="small muted"><code>import Lean4All.Definitions.${esc(bp.module)}</code> · <a href="${ghUrl(`/blob/${D.branch}/definitions/${bp.module}.lean`)}">definitions/${esc(bp.module)}.lean</a></p>${codeBlock(bp.definitions)}` : ""}
-          <h2>${t("bp.graph")}</h2>
-          <p class="muted small">${t("bp.graphHelp")}</p>
-          <div class="card graph">${graph || "—"}</div>
-          <h2>${t("bp.results")}</h2>
-          <div class="card table-scroll"><table class="list bp-table"><thead><tr><th>${t("bp.paper")}</th><th>${t("bp.statement")}</th><th>${t("bp.uses")}</th><th>${t("tbl.thm")}</th></tr></thead>
-            <tbody>${rows}</tbody></table></div>
+          ${results.length ? `<h2 style="margin-top:0">${t("bp.results")}</h2><div class="grid" style="gap:12px">${results.map(card).join("")}</div>` : ""}
+          ${graph ? `<h2>${t("bp.graph")}</h2><p class="muted small">${t("bp.graphHelp")}</p><div class="card graph">${graph}</div>` : ""}
         </div>
-        <aside class="side card pad">
-          <dl>
-            <dt>${t("bp.paper")}</dt><dd><a href="${esc(bp.url)}">arXiv:${esc(bp.arxiv)}</a></dd>
-            <dt>${t("t.mission")}</dt><dd>${m ? `<a href="#/missions/${m.id}">${esc(loc(m, "title"))}</a>` : "—"}</dd>
-            <dt>${t("bp.progress")}</dt><dd>${t("bp.formalized", results.filter((it) => it.theorem).length, results.filter((it) => it.kind !== "definition").length)}</dd>
-            ${bp.issue ? `<dt>${t("bp.request")}</dt><dd><a href="${ghUrl(`/issues/${bp.issue}`)}">#${bp.issue}</a></dd>` : ""}
-          </dl>
-          ${bp.status === "no-results" ? "" : `<h3 style="margin-top:20px">${t("m.help")}</h3>
-          <p class="small">${t("m.oneLine")}</p>
-          ${codeBlock(t("agent.blueprint", siteBase(), bp.id), false)}`}
-          <p class="small"><a href="blueprints/${esc(bp.id)}/BLUEPRINT.md">BLUEPRINT.md</a> · <a href="api/blueprints/${esc(bp.id)}.json">JSON</a></p>
+        <aside class="bp-side">
+          <div class="label" style="margin-bottom:8px">${t("bp.details")}</div>
+          ${details}
         </aside>
-      </div>`;
+      </div>`}`;
   }
 
   function auditChip(inf) {
@@ -916,6 +949,13 @@
   }, { passive: true });
 
   document.addEventListener("click", (e) => {
+    const j = e.target.closest("[data-jump]");
+    if (j) {
+      e.preventDefault();
+      const el = document.getElementById(j.dataset.jump);
+      if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1200); }
+      return;
+    }
     const b = e.target.closest("[data-copy]");
     if (!b) return;
     navigator.clipboard?.writeText(b.dataset.copy).then(() => { b.textContent = t("copied"); setTimeout(() => (b.textContent = t("copy")), 1200); });

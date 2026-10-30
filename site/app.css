@@ -343,3 +343,33 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 code.tex { white-space: pre-wrap; font-size: 12px; }
 .bp-link { gap: 12px; border-color: var(--accent); }
 @media (max-width: 640px) { .ax-form { flex-direction: column; } }
+
+/* blueprint page */
+.bp-hero-card { padding: 24px; border-color: var(--accent); }
+.bp-hero-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 28px; align-items: center; }
+.bp-hero-left h2 { margin: 0 0 6px; font-size: 22px; }
+.bp-hero-left > p { margin: 0 0 12px; }
+.bp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+.bp-stat { background: var(--surface-2); border-radius: 10px; padding: 12px; text-align: center; }
+.bp-stat b { display: block; font: 700 26px var(--serif); }
+.bp-stat span { font-size: 12px; color: var(--muted); }
+.bp-stat.sk b { color: var(--sketched); } .bp-stat.ok b { color: var(--proved); }
+@media (max-width: 760px) { .bp-hero-grid { grid-template-columns: minmax(0, 1fr); } .bp-hero-right { order: -1; } }
+.bp-item { padding: 16px 18px; }
+.bp-item-todo { border-style: dashed; }
+.bp-item-title { font-weight: 600; margin: 6px 0 2px; }
+.bp-item .prose p { margin: .3em 0; }
+.bp-side { display: grid; gap: 8px; align-content: start; }
+.bp-detail { padding: 0; }
+.bp-detail summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-weight: 600; font-size: 14px; }
+.bp-detail summary::-webkit-details-marker { display: none; }
+.bp-detail summary span:first-child { flex: 1; }
+.bp-detail summary::after { content: "+"; color: var(--muted); font-weight: 400; font-size: 18px; line-height: 1; }
+.bp-detail[open] summary::after { content: "−"; }
+.bp-detail-body { padding: 0 14px 12px; }
+.bp-detail-body .code-wrap pre { max-height: 360px; }
+.bp-detail-body table td { padding: 6px 8px; }
+.bp-detail-body dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: 0 0 8px; }
+.bp-detail-body dt { color: var(--muted); } .bp-detail-body dd { margin: 0; }
+.flash { box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 4px var(--accent); transition: box-shadow .3s; }
+.bp-side-wide { max-width: 760px; }
