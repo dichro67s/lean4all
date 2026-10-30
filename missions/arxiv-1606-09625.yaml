@@ -1,0 +1,170 @@
+id: arxiv-1606-09625
+title: Conjugacy classes of commuting nilpotents
+title_ko: 교환하는 멱영원들의 켤레류
+type: Research Paper
+tags:
+- Algebraic Geometry
+captain: dichro67s
+reviewed: false
+summary: The paper studies the moduli space $\mathcal{M}_{q,n}$ of regular $q$-tuples of commuting nilpotents,
+  showing it is an affine space bundle over $\mathbb{P}^{q-1}$, diffeomorphic to a sum of twisted tangent
+  bundles over $\mathbb{C}$, and isomorphic to an open subscheme of a punctual Hilbert scheme, while proving
+  it is not a vector bundle in the algebraic category.
+summary_ko: 본 논문은 정규 교환하는 멱영원 $q$-튜플의 모듈라이 공간 $\mathcal{M}_{q,n}$을 연구하여, 이 공간이 $\mathbb{P}^{q-1}$ 위의 아핀
+  공간 다발이며, $\mathbb{C}$ 위에서 비틀린 접다발의 합과 미분동형이고, 점별 힐베르트 스킴의 열린 부분 스킴과 동형임을 보이며, 대수적 범주에서는 벡터 다발이 아님을 증명한다.
+description: |-
+  We consider the space $\mathcal M_{q,n}$ of regular $q$-tuples of commuting nilpotent endomorphisms of $k^n$ modulo simultaneous conjugation. We show that $\mathcal M_{q,n}$ admits a natural homogeneous space structure, and that it is an affine space bundle over $\mathbb P^{q-1}$. A closer look at the homogeneous structure reveals that, over $\mathbb C$ and with respect to the complex topology, $\mathcal M_{q,n}$ is a smooth vector bundle over $\mathbb P^{q-1}$. We prove that, in this case, $\mathcal M_{q,n}$ is diffeomorphic to a direct sum of twisted tangent bundles. We also prove that $\mathcal M_{q,n}$ possesses a universal property and represents a functor of ideals, and use it to identify $\mathcal M_{q,n}$ with an open subscheme of a punctual Hilbert scheme. By using a result of A. Iarrobino, we show that $\mathcal M_{q,n} \to \mathbb P^{q-1}$ is not a vector bundle, hence giving a family of affine space bundles that are not vector bundles.
+
+  **Machine-generated blueprint.** The formal statements were written by Qwen and compile against Mathlib, but a moderator has not checked them against the paper yet. Read the blueprint before contributing.
+description_ko: |-
+  **기계가 생성한 블루프린트입니다.** 형식 명제는 Qwen이 작성했고 Mathlib에서 컴파일되지만, 아직 운영자가 논문과 대조하지 않았습니다. 기여하기 전에 블루프린트를 먼저 읽으세요.
+
+  본 논문은 정규 교환하는 멱영원 $q$-튜플의 모듈라이 공간 $\mathcal{M}_{q,n}$을 연구하여, 이 공간이 $\mathbb{P}^{q-1}$ 위의 아핀 공간 다발이며, $\mathbb{C}$ 위에서 비틀린 접다발의 합과 미분동형이고, 점별 힐베르트 스킴의 열린 부분 스킴과 동형임을 보이며, 대수적 범주에서는 벡터 다발이 아님을 증명한다.
+source:
+  title: William Haboush, Donghoon Hyeon, Conjugacy classes of commuting nilpotents (arXiv:1606.09625)
+  url: https://arxiv.org/abs/1606.09625
+blueprint: arxiv-1606-09625
+milestones:
+- title: 'Proposition 2.4: Classification of cyclic representations of the Artinian algebra A_{q,n}'
+  title_ko: 'Proposition 2.4: Artin 대수 A_{q,n}의 순환 표현 분류'
+  statement: Let $\rho$ and $\rho'$ be two cyclic representations of the Artinian algebra $A_{q,n}$. Then
+    the associated modules $V_{\rho}$ and $V_{\rho'}$ are isomorphic as $A_{q,n}$-modules if and only
+    if their annihilator ideals are equal, i.e., $\mathcal{A}(\rho) = \mathcal{A}(\rho')$. Furthermore,
+    the set of isomorphism classes of cyclic representations of $A_{q,n}$ is in bijective correspondence
+    with the set of ideals in $A_{q,n}$ of codimension $n$, and also with the set of simultaneous conjugacy
+    classes of ordered $q$-tuples of commuting nilpotent endomorphisms.
+  statement_ko: $A_{q,n}$의 두 순환 표현 $\rho$와 $\rho'$에 대해, 대응하는 $A_{q,n}$-가군 $V_{\rho}$와 $V_{\rho'}$가 동형일
+    필요충분조건은 그 소멸자 이념(annihilator ideal)이 같은 것, 즉 $\mathcal{A}(\rho) = \mathcal{A}(\rho')$인 것이다. 또한, $A_{q,n}$의
+    순환 표현의 동형류 집합은 $A_{q,n}$ 내의 여차원(codimension)이 $n$인 이념들의 집합과 일대일 대응하며, 가환하는 멱영(endomorphism) $q$-튜플의
+    동시 켤레(conjugacy)류 집합과도 일대일 대응한다.
+- title: 'Lemma 2.5: Properties of regular q-tuples of commuting nilpotents'
+  title_ko: 'Lemma 2.5: 가환 멱영원 q-튜플의 정규성에 대한 성질'
+  statement: |-
+    Let $k$ be an algebraically closed field, and let $A_{q,n} = k[x_1, \dots, x_q] / \mathfrak{m}_0^n$ be the truncated polynomial algebra. Let $(Z_1, \dots, Z_q)$ be a regular $q$-tuple of commuting nilpotent endomorphisms of a finite-dimensional $k$-vector space $V$, meaning that $Z_i^{n-1} \neq 0$ for some $i$. Then:
+    1. For any $j \in \{1, \dots, q\}$, $Z_j$ is a polynomial in $Z_i$.
+    2. If $\rho: A_{q,n} \to \operatorname{End}_k(V)$ is the representation associated to the tuple, then the image $\rho(A_{q,n})$ is isomorphic as a $k$-algebra to $k[z]/(z^n)$.
+  statement_ko: |-
+    $k$를 대수적으로 닫힌 체라고 하고, $A_{q,n} = k[x_1, \dots, x_q] / \mathfrak{m}_0^n$을 절단된 다항식 대수라고 하자. $(Z_1, \dots, Z_q)$가 유한 차원 $k$-벡터 공간 $V$ 위의 가환 멱영원 연산자들의 정규 $q$-튜플이라고 하자. 즉, 어떤 $i$에 대해 $Z_i^{n-1} \neq 0$이다. 그러면:
+    1. 임의의 $j \in \{1, \dots, q\}$에 대해, $Z_j$는 $Z_i$의 다항식이다.
+    2. 튜플에 대응하는 표현 $\rho: A_{q,n} \to \operatorname{End}_k(V)$가 주어졌을 때, 상 $\rho(A_{q,n})$은 $k$-대수로서 $k[z]/(z^n)$과 동형이다.
+- title: 'Lemma 2.9: Existence of nil parameters and automorphism for regular representations'
+  title_ko: 'Lemma 2.9: 정칙 표현에 대한 영 매개변수 및 자기동형사상의 존재성'
+  statement: Let $\rho$ be a regular representation of the algebra $A_{q,n}$. Then there exists a system
+    of nil parameters $u_1, \dots, u_q$ such that the annihilator ideal $A(\rho)$ is generated by $u_2,
+    \dots, u_q$. Moreover, there exists an automorphism $\alpha \in \operatorname{GA}_{q,n}$ such that
+    $\alpha(x_i) = u_i$ for all $i$ and $\alpha(\mathfrak{q}_1) = A(\rho)$.
+  statement_ko: $A_{q,n}$의 정칙 표현 $\rho$가 주어졌을 때, $A(\rho)$가 $u_2, \dots, u_q$에 의해 생성되도록 하는 영 매개변수 $u_1,
+    \dots, u_q$가 존재한다. 또한, 모든 $i$에 대해 $\alpha(x_i) = u_i$이고 $\alpha(\mathfrak{q}_1) = A(\rho)$를 만족하는 자기동형사상
+    $\alpha \in \operatorname{GA}_{q,n}$가 존재한다.
+- title: 'Proposition 3.2: Structure of the automorphism group of the truncated polynomial algebra'
+  title_ko: 'Proposition 3.2: 절단 다항식 대수의 자기동형군 구조'
+  statement: |-
+    Let $k$ be an algebraically closed field. Let $A_{q,n} = k[x_1, \dots, x_q] / \mathfrak{m}_0^n$ be the truncated polynomial algebra, and let $\operatorname{GA}_{q,n}$ be its group of $k$-algebra automorphisms. Let $\mathcal{I}_{q,n}$ be the kernel of the natural map $\operatorname{GA}_{q,n} \to \operatorname{GL}_q(k)$ induced by the action on $\mathfrak{m}/\mathfrak{m}^2$. Let $G_1$ be the stabilizer of the ideal $\mathfrak{q}_1 = \langle x_2, \dots, x_q \rangle$ in $\operatorname{GA}_{q,n}$, and let $P_1$ be the intersection of $G_1$ with the image of $\operatorname{GL}_q(k)$ in $\operatorname{GA}_{q,n}$. Then there are isomorphisms of varieties:
+    $$ \operatorname{GA}_{q,n} \simeq \operatorname{GL}_q(k) \times \mathcal{I}_{q,n} $$
+    $$ G_1 \simeq P_1 \times (\mathcal{I}_{q,n} \cap G_1) $$
+    Moreover:
+    1. The groups $\mathcal{I}_{q,n}$ and $\mathcal{I}_{q,n} \cap G_1$ are unipotent. For each $j$, the subgroup $\mathcal{I}^j_{q,n}$ of elements reducing to the identity modulo $\mathfrak{m}^{j+2}$ is normal in $\operatorname{GA}_{q,n}$.
+    2. There is an isomorphism of additive group schemes $\mathcal{I}^j_{q,n}/\mathcal{I}^{j+1}_{q,n} \simeq (\mathfrak{m}^{j+2}/\mathfrak{m}^{j+3})^q$.
+    3. There are natural isomorphisms of varieties $\mathcal{I}_{q,n} \simeq (\mathfrak{m}^2)^q$ and $\mathcal{I}_{q,n} \cap G_1 \simeq \mathfrak{m}^2 \times (\mathfrak{q}_1\mathfrak{m})^{q-1}$.
+    4. The groups $\operatorname{GA}_{q,n}$ and $G_1$ are connected affine group schemes.
+  statement_ko: |-
+    $k$를 대수적으로 닫힌 체라고 하자. $A_{q,n} = k[x_1, \dots, x_q] / \mathfrak{m}_0^n$을 절단 다항식 대수라고 하고, $\operatorname{GA}_{q,n}$을 그 $k$-대수 자기동형군이라고 하자. $\mathcal{I}_{q,n}$을 $\mathfrak{m}/\mathfrak{m}^2$에 대한 작용에 의해 유도된 자연스러운 사상 $\operatorname{GA}_{q,n} \to \operatorname{GL}_q(k)$의 핵이라고 하자. $G_1$을 $\operatorname{GA}_{q,n}$에서 아이디얼 $\mathfrak{q}_1 = \langle x_2, \dots, x_q \rangle$의 안정자군이라고 하고, $P_1$을 $G_1$과 $\operatorname{GL}_q(k)$의 $\operatorname{GA}_{q,n}$ 내 상의 교집합이라고 하자. 그러면 다음 다양체 동형사상이 존재한다:
+    $$ \operatorname{GA}_{q,n} \simeq \operatorname{GL}_q(k) \times \mathcal{I}_{q,n} $$
+    $$ G_1 \simeq P_1 \times (\mathcal{I}_{q,n} \cap G_1) $$
+    또한 다음이 성립한다:
+    1. 군 $\mathcal{I}_{q,n}$과 $\mathcal{I}_{q,n} \cap G_1$은 단멱(unipotent)이다. 각 $j$에 대해, $\mathfrak{m}^{j+2}$를 법으로 항등원으로 환원되는 원소들의 부분군 $\mathcal{I}^j_{q,n}$은 $\operatorname{GA}_{q,n}$의 정규부분군이다.
+    2. 가법 군 스킴의 동형사상 $\mathcal{I}^j_{q,n}/\mathcal{I}^{j+1}_{q,n} \simeq (\mathfrak{m}^{j+2}/\mathfrak{m}^{j+3})^q$이 존재한다.
+    3. 자연스러운 다양체 동형사상 $\mathcal{I}_{q,n} \simeq (\mathfrak{m}^2)^q$ 및 $\mathcal{I}_{q,n} \cap G_1 \simeq \mathfrak{m}^2 \times (\mathfrak{q}_1\mathfrak{m})^{q-1}$이 존재한다.
+    4. 군 $\operatorname{GA}_{q,n}$과 $G_1$은 연결된 아핀 군 스킴이다.
+- title: 'Proposition 3.3: Dimensions of automorphism groups and moduli spaces for truncated polynomial
+    algebras'
+  title_ko: 'Proposition 3.3: 절단 다항식 대수의 자기동형군 및 모듈라이 공간의 차원'
+  statement: |-
+    Let $k$ be an algebraically closed field, and let $q, n$ be positive integers. Let $A_{q,n} = k[x_1, \dots, x_q] / \mathfrak{m}_0^n$ be the truncated polynomial algebra, where $\mathfrak{m}_0 = \langle x_1, \dots, x_q \rangle$. Let $\operatorname{GA}_{q,n}$ be the algebraic group of $k$-algebra automorphisms of $A_{q,n}$, and let $G_1$ be the stabilizer of the ideal $\mathfrak{q}_1 = \langle x_2, \dots, x_q \rangle$ in $\operatorname{GA}_{q,n}$. Let $\mathcal{I}_{q,n}$ be the kernel of the natural map $\operatorname{GA}_{q,n} \to \operatorname{GL}_q(k)$ induced by the action on $\mathfrak{m}/\mathfrak{m}^2$. Then the following dimension formulas hold:
+    1. $\dim(\mathcal{I}_{q,n}) = q \left( \binom{q+n-1}{n-1} - (q+1) \right)$
+    2. $\dim(\mathcal{I}_{q,n} \cap G_1) = \binom{q+n-1}{n-1} + (q-1) \left( \binom{q+n-1}{n-1} - (q+1) - (n-2) \right)$
+    3. $\dim(\operatorname{GA}_{q,n}) = q \binom{q+n-1}{n-1} - q$
+    4. $\dim(G_1) = q \binom{q+n-1}{n-1} - qn + n - 1$
+    5. $\dim(\operatorname{GA}_{q,n} / G_1) = (q-1)(n-1)$
+    6. $\dim(\mathcal{I}_{q,n} / (\mathcal{I}_{q,n} \cap G_1)) = (q-1)(n-2)$
+  statement_ko: |-
+    $k$를 대수적으로 닫힌 체라고 하고, $q, n$을 양의 정수라고 하자. $A_{q,n} = k[x_1, \dots, x_q] / \mathfrak{m}_0^n$을 절단 다항식 대수라고 하자. 여기서 $\mathfrak{m}_0 = \langle x_1, \dots, x_q \rangle$이다. $\operatorname{GA}_{q,n}$을 $A_{q,n}$의 $k$-대수 자기동형군이라고 하고, $G_1$을 $\operatorname{GA}_{q,n}$에서 아이디얼 $\mathfrak{q}_1 = \langle x_2, \dots, x_q \rangle$의 안정자라고 하자. $\mathcal{I}_{q,n}$을 $\mathfrak{m}/\mathfrak{m}^2$에 대한 작용에 의해 유도된 자연스러운 사상 $\operatorname{GA}_{q,n} \to \operatorname{GL}_q(k)$의 핵이라고 하자. 그러면 다음 차원 공식들이 성립한다:
+    1. $\dim(\mathcal{I}_{q,n}) = q \left( \binom{q+n-1}{n-1} - (q+1) \right)$
+    2. $\dim(\mathcal{I}_{q,n} \cap G_1) = \binom{q+n-1}{n-1} + (q-1) \left( \binom{q+n-1}{n-1} - (q+1) - (n-2) \right)$
+    3. $\dim(\operatorname{GA}_{q,n}) = q \binom{q+n-1}{n-1} - q$
+    4. $\dim(G_1) = q \binom{q+n-1}{n-1} - qn + n - 1$
+    5. $\dim(\operatorname{GA}_{q,n} / G_1) = (q-1)(n-1)$
+    6. $\dim(\mathcal{I}_{q,n} / (\mathcal{I}_{q,n} \cap G_1)) = (q-1)(n-2)$
+- title: 'Proposition 4.2: Equivariant bundle structure on the moduli space of regular tuples'
+  title_ko: 'Proposition 4.2: 정규 튜플의 모듈라이 공간의 동변환 다발 구조'
+  statement: Let $k$ be an algebraically closed field, and let $q, n$ be integers with $q > 1$ and $n
+    > 2$. The moduli space $\mathcal{M}_{q,n}$ of regular $q$-tuples of commuting nilpotents is isomorphic
+    to the associated bundle $\operatorname{GL}_q(k) \times^{P_1} (\mathcal{I}_{q,n} / (\mathcal{I}_{q,n}
+    \cap G_1))$, where $P_1$ is the parabolic subgroup stabilizing the line $\langle x_1 \rangle$, $\mathcal{I}_{q,n}$
+    is the kernel of the map $\operatorname{GA}_{q,n} \to \operatorname{GL}_q(k)$, and $G_1$ is the stabilizer
+    of the ideal $\mathfrak{q}_1$. The group $P_1$ acts on the quotient $\mathcal{I}_{q,n} / (\mathcal{I}_{q,n}
+    \cap G_1)$ by conjugation.
+  statement_ko: $k$를 대수적으로 닫힌 체라고 하고, $q > 1$, $n > 2$인 정수 $q, n$을 고려하자. 교환하는 멱영원들의 정규 $q$-튜플의 모듈라이 공간
+    $\mathcal{M}_{q,n}$은 연관 다발 $\operatorname{GL}_q(k) \times^{P_1} (\mathcal{I}_{q,n} / (\mathcal{I}_{q,n}
+    \cap G_1))$과 동형이다. 여기서 $P_1$은 직선 $\langle x_1 \rangle$을 고정하는 포물선 부분군, $\mathcal{I}_{q,n}$은 사상 $\operatorname{GA}_{q,n}
+    \to \operatorname{GL}_q(k)$의 핵, $G_1$은 아이디얼 $\mathfrak{q}_1$의 고정자이다. 군 $P_1$은 몫 공간 $\mathcal{I}_{q,n}
+    / (\mathcal{I}_{q,n} \cap G_1)$ 위에서 켤레 작용(conjugation)으로 작용한다.
+- title: 'Proposition 5.2: Isomorphism of the multiplication morphism for the group I_{q,n}'
+  title_ko: 'Proposition 5.2: 군 I_{q,n}에 대한 곱셈 사상의 동형 사상'
+  statement: 'Let $k$ be an algebraically closed field. Let $\mathcal{I}_{q,n}$ be the kernel of the natural
+    map $\operatorname{GA}_{q,n} \to \operatorname{GL}_q(k)$, and let $G_1$ be the stabilizer of the ideal
+    $\mathfrak{q}_1 = \langle x_2, \dots, x_q \rangle$ in $\operatorname{GA}_{q,n}$. Let $\Gamma$ be a
+    subgroup of $\operatorname{GA}_{q,n}$ (specifically, a complement to $\mathcal{I}_{q,n} \cap G_1$
+    in $\mathcal{I}_{q,n}$). The multiplication morphism $\mu: \Gamma \times (\mathcal{I}_{q,n} \cap G_1)
+    \to \mathcal{I}_{q,n}$ defined by $\mu(g, h) = gh$ is an isomorphism of algebraic varieties.'
+  statement_ko: '$k$를 대수적으로 닫힌 체라고 하자. $\mathcal{I}_{q,n}$을 자연스러운 사상 $\operatorname{GA}_{q,n} \to \operatorname{GL}_q(k)$의
+    핵이라고 하고, $G_1$을 $\operatorname{GA}_{q,n}$에서 아이디얼 $\mathfrak{q}_1 = \langle x_2, \dots, x_q \rangle$의
+    안정자라고 하자. $\Gamma$를 $\operatorname{GA}_{q,n}$의 부분군(구체적으로는 $\mathcal{I}_{q,n}$ 내의 $\mathcal{I}_{q,n}
+    \cap G_1$의 여보충 부분군)이라고 하자. $\mu(g, h) = gh$로 정의되는 곱셈 사상 $\mu: \Gamma \times (\mathcal{I}_{q,n} \cap
+    G_1) \to \mathcal{I}_{q,n}$은 대수적 다양체의 동형 사상이다.'
+- title: 'Proposition 5.3: Existence of a unique homomorphism and linear map for ideals generated by nil
+    parameters'
+  title_ko: 'Proposition 5.3: Nil 매개변수로 생성된 아이디얼에 대한 유일한 준동형사상 및 선형 사상 존재성'
+  statement: 'Let $\mathfrak{q}''$ be an ideal in $A_{q,n}$ generated by a system of nil parameters such
+    that $\mathfrak{q}'' = \Omega_1$ modulo $\mathfrak{m}^2$. Then there exists a unique homomorphism
+    $\phi: A_{q,n} \to k[z]$ such that $\phi(x_1) = z$ and $\operatorname{Ker}(\phi) = \mathfrak{q}''$.
+    Moreover, there is a uniquely determined linear map $\gamma: \Omega_1 \to x_1^2 k[x_1] \subset A_{q,n}$
+    such that the elements $u - \gamma(u)$ for all $u \in \Omega_1$ generate $\mathfrak{q}''$. In particular,
+    the elements $x_i - \gamma(x_i)$ for $i > 1$ form a set of nil parameters of length $q-1$ generating
+    $\mathfrak{q}''$.'
+  statement_ko: '$\mathfrak{m}^2$를 법으로 하여 $\Omega_1$과 같은, nil 매개변수 체계로 생성된 $A_{q,n}$의 아이디얼 $\mathfrak{q}''$가
+    주어졌다고 하자. 그러면 $\phi(x_1) = z$이고 $\operatorname{Ker}(\phi) = \mathfrak{q}''$인 유일한 준동형사상 $\phi: A_{q,n}
+    \to k[z]$가 존재한다. 또한, 모든 $u \in \Omega_1$에 대해 $u - \gamma(u)$가 $\mathfrak{q}''$를 생성하도록 하는 유일한 선형 사상
+    $\gamma: \Omega_1 \to x_1^2 k[x_1] \subset A_{q,n}$가 존재한다. 특히, $i > 1$인 $x_i - \gamma(x_i)$들은 $\mathfrak{q}''$를
+    생성하는 길이 $q-1$인 nil 매개변수 체계이다.'
+- title: 'Corollary 5.4: Isomorphism between the quotient of the kernel group and the space of homomorphisms'
+  title_ko: 'Corollary 5.4: 핵심 군의 몫과 호모모피즘 공간 사이의 동형'
+  statement: 'There is a natural isomorphism of varieties $\psi: \mathcal{I}_{q,n}/(\mathcal{I}_{q,n}
+    \cap G_1) \rightarrow \operatorname{Hom}_k(\Omega_1, z^2 k[z])$, where $\mathcal{I}_{q,n}$ is the
+    kernel of the natural map $\operatorname{GA}_{q,n} \to \operatorname{GL}_q(k)$, $G_1$ is the stabilizer
+    of the ideal $\mathfrak{q}_1$, and $\Omega_1$ is the subspace of $\mathfrak{m}/\mathfrak{m}^2$ corresponding
+    to the variables $x_2, \dots, x_q$.'
+  statement_ko: '다양체 $\psi: \mathcal{I}_{q,n}/(\mathcal{I}_{q,n} \cap G_1) \rightarrow \operatorname{Hom}_k(\Omega_1,
+    z^2 k[z])$의 자연스러운 동형이 존재한다. 여기서 $\mathcal{I}_{q,n}$은 자연스러운 사상 $\operatorname{GA}_{q,n} \to \operatorname{GL}_q(k)$의
+    핵이고, $G_1$은 아이디얼 $\mathfrak{q}_1$의 안정자군이며, $\Omega_1$은 변수 $x_2, \dots, x_q$에 대응하는 $\mathfrak{m}/\mathfrak{m}^2$의
+    부분공간이다.'
+- title: 'Proposition 6.2: Smooth deformation equivalence of the moduli space to a direct sum of twisted
+    tangent bundles'
+  title_ko: 'Proposition 6.2: 모듈라이 공간이 비틀린 접다발의 직합과 매끄러운 변형 동치임'
+  statement: The moduli space $\mathcal{M}_{q,n}$, viewed as a smooth fibre bundle over $\mathbb{P}^{q-1}$,
+    is smooth deformation equivalent to the direct sum $\bigoplus_{j=2}^{n-1} T_{\mathbb{P}^{q-1}}(+j)$
+    of twisted tangent bundles over $\mathbb{P}^{q-1}$.
+  statement_ko: $\mathbb{P}^{q-1}$ 위의 매끄러운 올다발로 간주되는 모듈라이 공간 $\mathcal{M}_{q,n}$은 $\mathbb{P}^{q-1}$ 위의
+    비틀린 접다발들의 직합 $\bigoplus_{j=2}^{n-1} T_{\mathbb{P}^{q-1}}(+j)$과 매끄러운 변형 동치(smooth deformation equivalent)이다.
+- title: 'Theorem 6.3: Smooth fibre bundle structure of the moduli space'
+  title_ko: 'Theorem 6.3: 모듈라이 공간의 매끄러운 올 다발 구조'
+  statement: The moduli space $\mathcal{M}_{q,n}$, viewed as a smooth fibre bundle over $\mathbb{P}^{q-1}$,
+    is isomorphic to the direct sum of twisted tangent bundles $\bigoplus_{j=2}^{n-1} T_{\mathbb{P}^{q-1}}(+j)$.
+  statement_ko: 매끄러운 올 다발로서 $\mathbb{P}^{q-1}$ 위의 모듈라이 공간 $\mathcal{M}_{q,n}$은 비틀린 접다발들의 직합 $\bigoplus_{j=2}^{n-1}
+    T_{\mathbb{P}^{q-1}}(+j)$과 동형이다.
+- title: 'Theorem 8.2: Moduli space as open subscheme of punctual Hilbert scheme'
+  title_ko: 'Theorem 8.2: 점적 힐베르트 스킴의 열린 부분 스킴으로서의 모듈라이 공간'
+  statement: The moduli space $\mathcal{M}_{q,n}$ is isomorphic to an open subscheme of the punctual Hilbert
+    scheme $\operatorname{Hilb}^n_{[0]} \mathbb{P}^q$.
+  statement_ko: 모듈라이 공간 $\mathcal{M}_{q,n}$은 점적 힐베르트 스킴 $\operatorname{Hilb}^n_{[0]} \mathbb{P}^q$의 열린
+    부분 스킴과 동형이다.
