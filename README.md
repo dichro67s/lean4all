@@ -49,6 +49,13 @@ python3 -m http.server -d _site 8000
 - Settings → Branches: protect `main` and require the **Verify** check. Turn on code owner reviews if
   you want mission changes gated.
 
+## Automated access
+
+Agents working for a contributor are welcome to read the site, `start.md`, `SKILL.md`
+and the JSON API. Bulk crawling of the site to build AI training sets or other datasets is not
+permitted; text and data mining rights are reserved (TDMRep). Crawlers should follow
+https://dichro67s.github.io/robots.txt.
+
 ## Citation
 
 Lean4All follows the platform design of:
