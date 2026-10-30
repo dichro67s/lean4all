@@ -727,7 +727,7 @@ def site(lean: bool) -> None:
         "stats": {"missions": len(mission_list), "theorems": len(theorems), **counts,
                   "contributors": len(users)},
         "missions": mission_list, "theorems": theorems,
-        "blueprints": [{k: bp.get(k) for k in ("id", "arxiv", "title", "title_ko", "authors", "mission",
+        "blueprints": [{k: bp.get(k) for k in ("id", "arxiv", "title", "title_ko", "authors", "mission", "status",
                                                "generated", "counts", "url", "issue")} for bp in blueprints],
         "users": sorted(users.values(), key=lambda u: -u["score"]),
         "activity": sorted(activity, key=lambda a: a["date"], reverse=True)[:200],

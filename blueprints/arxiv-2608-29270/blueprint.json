@@ -23,32 +23,33 @@
   ],
   "url": "https://arxiv.org/abs/2608.29270",
   "published": "2026-08-29",
-  "mission": "arxiv-2608-29270",
+  "mission": null,
+  "status": "no-results",
   "module": null,
   "preamble": "import Mathlib",
   "source_kind": "latex",
   "model": "Qwen3.8-Flash-Next",
   "issue": 1,
-  "generated": "2026-10-30T06:50:55+00:00",
+  "generated": "2026-10-30T07:17:58+00:00",
   "conventions": [
-    "Use `Prop` for all theorem statements (T, S_i, \\hat{T}).",
-    "Use `Finset Prop` or `List Prop` to represent the set of shadow statements $\\mathcal{S}$.",
-    "Use `Bool` for the binary output of the SA-Pass metric (1 for pass, 0 for fail).",
-    "Use `Real` for the relaxed SA-Pass score (continuous value in [0,1]).",
-    "Use `Nat` for counts (number of shadows, number of problems, etc.).",
-    "Use `String` for Lean code snippets or identifiers if needed, but primarily work with `Prop` terms.",
-    "Assume a context where `Decidable` instances are available for checking implications if implementing the metric logic, though the paper defines it via type-checking existence.",
-    "Use `Iff` for equivalence ($\\Leftrightarrow$) and `Imp` (or `->`) for implication ($\\Rightarrow$)."
+    "Use `Prop` for all theorem statements. The 'intended formal statement' $T$ and 'generated statement' $\\widehat T$ are both of type `Prop`.",
+    "A 'shadow theorem' is represented as a pair `(S : Prop) (hS : S)`, where `S` is the statement and `hS` is the proof.",
+    "A 'complete shadow set' is a `List Prop` (or `Finset Prop`) $\\mathcal{S}$ such that $\\bigwedge_{S \\in \\mathcal{S}} S \\leftrightarrow T$.",
+    "Forward check for a shadow $S$ is the implication $\\widehat T \\to S$. In Lean, this is a term of type `\\widehat T \\to S`.",
+    "Backward check is the implication $(\\bigwedge_{S \\in \\mathcal{S}} S) \\to \\widehat T$. In Lean, this is a term of type `(\\forall S \\in \\mathcal{S}, S) \\to \\widehat T` or similar conjunction encoding.",
+    "The metric `SA-Pass` is a boolean-valued function (or `Nat` 0/1) depending on the existence of proofs for the forward and backward checks.",
+    "Compilation is assumed to be handled by the environment; the metric focuses on the logical implications between `Prop`s.",
+    "Use `List` for shadow sets to maintain order if necessary for indexing, though the logical content is order-independent."
   ],
   "conventions_ko": [
-    "모든 정리 명제(T, S_i, \\hat{T})는 `Prop`를 사용한다.",
-    "그림자 명제 집합 $\\mathcal{S}$는 `Finset Prop` 또는 `List Prop`로 표현한다.",
-    "SA-Pass 메트릭의 이진 출력(통과/실패)은 `Bool`을 사용한다.",
-    "완화된(relaxed) SA-Pass 점수(0에서 1 사이의 실수)는 `Real`을 사용한다.",
-    "개수(그림자 수, 문제 수 등)는 `Nat`을 사용한다.",
-    "필요시 Lean 코드 조각이나 식별자는 `String`을 사용하지만, 주로 `Prop` 항을 다룬다.",
-    "메트릭 로직 구현 시 함의 확인을 위해 `Decidable` 인스턴스가 가용한 맥락을 가정한다.",
-    "동치($\\Leftrightarrow$)는 `Iff`, 함의($\\Rightarrow$)는 `Imp`(또는 `->`)를 사용한다."
+    "모든 정리 문장은 `Prop` 타입을 사용한다. '의도된 형식화 문장' $T$와 '생성된 문장' $\\widehat T$ 모두 `Prop` 타입이다.",
+    "'섀도우 정리(shadow theorem)'는 `(S : Prop) (hS : S)` 쌍으로 표현된다. 여기서 `S`는 문장, `hS`는 증명이다.",
+    "'완전한 섀도우 집합(complete shadow set)'은 $\\bigwedge_{S \\in \\mathcal{S}} S \\leftrightarrow T$를 만족하는 `List Prop` (또는 `Finset Prop`) $\\mathcal{S}$이다.",
+    "섀도우 $S$에 대한 전방 검사(forward check)는 함의 $\\widehat T \\to S$이다. Lean에서는 `\\widehat T \\to S` 타입의 항(term)이다.",
+    "후방 검사(backward check)는 함의 $(\\bigwedge_{S \\in \\mathcal{S}} S) \\to \\widehat T$이다. Lean에서는 `(\\forall S \\in \\mathcal{S}, S) \\to \\widehat T` 또는 유사한 논리곱 인코딩 타입의 항이다.",
+    "메트릭 `SA-Pass`는 전방 및 후방 검사의 증명 존재 여부에 따라 결정되는 불리언 값 함수(또는 `Nat` 0/1)이다.",
+    "컴파일 여부는 환경에서 처리된다고 가정하며, 메트릭은 `Prop`들 간의 논리적 함의에 초점을 맞춘다.",
+    "필요한 경우 인덱싱을 위해 섀도우 집합에 `List`를 사용하지만, 논리적 내용은 순서에 무관하다."
   ],
   "notation": [
     {
@@ -56,36 +57,28 @@
       "lean": "T : Prop"
     },
     {
-      "paper": "\\widehat{T}",
+      "paper": "\\widehat T",
       "lean": "T_hat : Prop"
     },
     {
-      "paper": "\\mathcal{S} = \\{S_1, \\ldots, S_n\\}",
-      "lean": "S : Finset Prop"
+      "paper": "S_i",
+      "lean": "S : Prop"
     },
     {
-      "paper": "S_i",
-      "lean": "S_i : Prop"
+      "paper": "\\mathcal{S}",
+      "lean": "shadows : List Prop"
     },
     {
       "paper": "T \\Rightarrow S",
-      "lean": "T -> S"
+      "lean": "T \\to S"
     },
     {
-      "paper": "S_1 \\wedge \\cdots \\wedge S_n",
-      "lean": "S.prod (fun s => s) -- or foldr (&&) True S"
+      "paper": "S_1 \\wedge \\cdots \\wedge S_n \\Rightarrow T",
+      "lean": "(\\forall S \\in shadows, S) \\to T"
     },
     {
-      "paper": "\\text{SA-Pass}(\\widehat{T}, \\mathcal{S})",
-      "lean": "saPass T_hat S : Bool"
-    },
-    {
-      "paper": "\\text{SA-Pass}_{relaxed}(\\widehat{T}, \\mathcal{S})",
-      "lean": "saPassRelaxed T_hat S : Real"
-    },
-    {
-      "paper": "\\mathbf{1}\\{\\phi\\}",
-      "lean": "if h : phi then 1 else 0"
+      "paper": "\\text{SA-Pass}(\\widehat T, \\mathcal{S})",
+      "lean": "sa_pass T_hat shadows"
     }
   ],
   "definitions": "",

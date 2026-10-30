@@ -21,7 +21,7 @@ git reset -q --hard origin/main
 
 # 1. arXiv requests (GitHub issues titled "[arXiv] ...") -> blueprints, missions, theorem cards
 rm -f build/commit-message.txt
-python3 scripts/arxiv_blueprint.py --from-issues 2>&1 | sed "s/^/$(date -Is) arxiv: /"
+python3 -u scripts/arxiv_blueprint.py --from-issues 2>&1 | while IFS= read -r line; do echo "$(date -Is) arxiv: $line"; done
 if [ -s build/commit-message.txt ]; then
   git add blueprints missions theorems definitions
   git commit -q -F build/commit-message.txt && echo "$(date -Is) committed blueprint(s)"
@@ -35,6 +35,7 @@ if [ -n "$(git status --porcelain -- informal)" ]; then
   git commit -qm "Qwen informalization: ${ids% }" -m "Automated read-back by ${QWEN_MODEL:-Qwen3.8-Flash-Next} (scripts/informal-bot.sh)."
 fi
 
-if [ -n "$(git log origin/main..HEAD --oneline)" ]; then
-  git push -q origin main && echo "$(date -Is) pushed $(git log origin/main..HEAD --oneline | wc -l) commit(s)"
+n=$(git rev-list --count origin/main..HEAD)
+if [ "$n" -gt 0 ]; then
+  git push -q origin main && echo "$(date -Is) pushed $n commit(s)"
 fi

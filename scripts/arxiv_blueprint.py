@@ -552,6 +552,8 @@ def compile_spans(header: str, chunks: list[tuple[str, str]], footer: str = "") 
                 break
         else:
             head.append(msg)
+    if head:  # Lean failed outside any declaration (toolchain, header, environment): never guess
+        raise RuntimeError(f"Lean failed outside the generated declarations: {head[0][:600]}")
     return by, head
 
 
@@ -721,7 +723,7 @@ def write_outputs(meta: dict, items: list[dict], plan: dict, defs: str, macros_k
     for it, tid in zip(good, ids):
         it["theorem"] = tid
     preamble = "import Mathlib" + (f"\nimport Lean4All.Definitions.{mod}\nopen {mod}" if defs else "")
-    if defs:
+    if defs and any(it["kind"] in FORMAL_KINDS for it in items):
         (L.DEFINITIONS / f"{mod}.lean").write_text(defs_module(mod, defs), encoding="utf-8")
     for it in good:
         cite = f"{it['display']}{' (' + it['name'] + ')' if it['name'] else ''} in arXiv:{aid}"
@@ -763,12 +765,15 @@ def write_outputs(meta: dict, items: list[dict], plan: dict, defs: str, macros_k
     }
     if not mission["goal"]:
         mission.pop("goal")  # nothing formalized yet: the blueprint still coordinates the work
-    dump_yaml(L.MISSIONS / f"{sl}.yaml", mission)
+    has_results = any(it["kind"] in FORMAL_KINDS for it in items)
+    if has_results:
+        dump_yaml(L.MISSIONS / f"{sl}.yaml", mission)
 
     bp = {
         "id": sl, "arxiv": aid, "title": meta["title"], "title_ko": plan.get("title_ko"),
         "authors": meta["authors"], "abstract": meta["abstract"], "categories": meta["categories"],
-        "url": meta["url"], "published": meta["published"], "mission": sl, "module": mod if defs else None,
+        "url": meta["url"], "published": meta["published"], "mission": sl if has_results else None,
+        "status": "active" if has_results else "no-results", "module": mod if defs else None,
         "preamble": preamble, "source_kind": source_kind, "model": MODEL, "issue": issue,
         "generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "conventions": plan["conventions"], "conventions_ko": plan["conventions_ko"],
@@ -856,6 +861,9 @@ def run(aid: str, captain: str, issue: int | None = None, log=print) -> dict:
                      PLAN_SCHEMA, 6000, log, tries=3)
     if not plan:
         raise RuntimeError("the model could not produce a plan")
+    if not any(it["kind"] in FORMAL_KINDS for it in items):
+        log("  no theorem-like results: publishing a blueprint without a mission")
+        plan["concepts"] = []
     defs = build_definitions(mod, plan, prose, log)
     formalize_items(items, mod, defs, plan, macros, log)
     bp = publish(meta, items, plan, defs, macros_katex, kind, captain, issue, log)
@@ -871,11 +879,13 @@ def publish(meta, items, plan, defs, macros_katex, kind, captain, issue, log) ->
         new = sorted(p.stem for p in L.THEOREMS.glob("*.yaml") if p.name not in before)
         g = L.gen()
         bad = {t: e for t, e in g["card_errors"].items() if t in new and e}
-        mods = ([f"Lean4All.Definitions.{mod}"] if defs else []) + [f"Lean4All.Statements.{t}" for t in new]
+        mods = ([f"Lean4All.Definitions.{mod}"] if (L.DEFINITIONS / f"{mod}.lean").exists() else []) + \
+            [f"Lean4All.Statements.{t}" for t in new]
         failed = L.build_modules(mods) if not bad else {}
         if bad or failed:
             raise RuntimeError(f"generated files do not build: {bad or list(failed)}")
-        log(f"  verified: {len(new)} statement module(s) build; wrote blueprints/{sl}/ and missions/{sl}.yaml")
+        log(f"  verified: {len(new)} statement module(s) build; wrote blueprints/{sl}/"
+            + (f" and missions/{sl}.yaml" if (L.MISSIONS / f"{sl}.yaml").exists() else " (no mission: nothing to formalize)"))
         return bp
     except Exception:
         for p in L.THEOREMS.glob("*.yaml"):

@@ -453,7 +453,7 @@
     const steps = [1, 2, 3, 4, 5].map((n) => `<li><div class="step-num">${n}</div><div class="step-body"><h3>${t(`ax.s${n}.t`)}</h3><p>${t(`ax.s${n}.d`)}</p></div></li>`).join("");
     const bps = (D.blueprints || []).map((b) => `<a class="card mcard" href="#/blueprints/${b.id}">
         <div class="row"><span class="label">arXiv:${esc(b.arxiv)}</span><span class="spacer"></span>
-          <span class="small muted">${t("bp.formalized", b.counts.formalized, b.counts.results)}</span></div>
+          <span class="small muted">${b.status === "no-results" ? t("bp.noneShort") : t("bp.formalized", b.counts.formalized, b.counts.results)}</span></div>
         <h3>${esc(loc(b, "title"))}</h3><p>${esc(b.authors.slice(0, 4).join(", "))}${b.authors.length > 4 ? " et al." : ""}</p>
         ${bar({ total: b.counts.results, proved: b.counts.proved, sketched: b.counts.formalized - b.counts.proved })}</a>`).join("");
     return `
@@ -531,12 +531,13 @@
       </div>
       <div class="two-col">
         <div>
+          ${bp.status === "no-results" ? `<p class="callout">${t("bp.none")}</p>` : `
           <p class="callout small">${t("bp.machine", bp.model, new Date(bp.generated).toLocaleDateString(LANG))}</p>
           <h2>${t("bp.rules")}</h2>
           <ol class="rules">
             <li>${bp.module ? t("bp.r1", bp.module) : t("bp.r1none")}</li>
             <li>${t("bp.r2")}</li><li>${t("bp.r3", bp.mission)}</li><li>${t("bp.r4")}</li>
-          </ol>
+          </ol>`}
           <h2>${t("bp.conv")}</h2>
           <ul class="conv">${conv.map((c) => `<li>${mdm(c, true)}</li>`).join("")}</ul>
           ${bp.notation?.length ? `<h2>${t("bp.notation")}</h2><div class="card table-scroll"><table class="list"><thead><tr><th>${t("bp.paper")}</th><th>Lean</th></tr></thead><tbody>
@@ -556,9 +557,9 @@
             <dt>${t("bp.progress")}</dt><dd>${t("bp.formalized", results.filter((it) => it.theorem).length, results.filter((it) => it.kind !== "definition").length)}</dd>
             ${bp.issue ? `<dt>${t("bp.request")}</dt><dd><a href="${ghUrl(`/issues/${bp.issue}`)}">#${bp.issue}</a></dd>` : ""}
           </dl>
-          <h3 style="margin-top:20px">${t("m.help")}</h3>
+          ${bp.status === "no-results" ? "" : `<h3 style="margin-top:20px">${t("m.help")}</h3>
           <p class="small">${t("m.oneLine")}</p>
-          ${codeBlock(t("agent.blueprint", siteBase(), bp.id), false)}
+          ${codeBlock(t("agent.blueprint", siteBase(), bp.id), false)}`}
           <p class="small"><a href="blueprints/${esc(bp.id)}/BLUEPRINT.md">BLUEPRINT.md</a> · <a href="api/blueprints/${esc(bp.id)}.json">JSON</a></p>
         </aside>
       </div>`;
