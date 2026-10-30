@@ -1,0 +1,21 @@
+{
+  "id": "T0011",
+  "hash": "fcc2d14f3f8d2130",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-30T07:37:40+00:00",
+  "en": "Let $T$ and $\\hat{T}$ be propositions, and let $S$ be a finite set of propositions. Suppose that $S$ is a complete shadow set for $T$ (meaning $T$ implies every element of $S$, and the conjunction of all elements of $S$ implies $T$), that $\\hat{T}$ implies every element of $S$, and that the conjunction of all elements of $S$ implies $\\hat{T}$. Then $\\hat{T}$ is logically equivalent to $T$.",
+  "ko": "명제 $T$와 $\\hat{T}$, 그리고 명제들의 유한 집합 $S$가 주어졌다고 하자. $S$가 $T$에 대한 완전한 그림자 집합(즉, $T$가 $S$의 모든 원소를 함의하고, $S$의 모든 원소의 논리곱이 $T$를 함의함)이고, $\\hat{T}$가 $S$의 모든 원소를 함의하며, $S$의 모든 원소의 논리곱이 $\\hat{T}$를 함의한다고 가정하자. 그러면 $\\hat{T}$와 $T$는 논리적으로 동치이다.",
+  "caveats_en": [
+    "The term 'conjunction of all elements of $S$' refers to the universal quantification $\\forall s \\in S, s$, which is vacuously true if $S$ is empty.",
+    "The definitions of `completeShadowSet`, `forwardCheck`, and `backwardCheck` are expanded in the statement based on their formal definitions in the provided code."
+  ],
+  "caveats_ko": [
+    "'$S$의 모든 원소의 논리곱'은 $\\forall s \\in S, s$를 의미하며, $S$가 공집합일 경우 참(vacuously true)으로 간주된다.",
+    "`completeShadowSet`, `forwardCheck`, `backwardCheck`의 정의는 제공된 코드의 형식적 정의를 바탕으로 서술에 전개되었다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement correctly formalizes the human description. The definitions of `completeShadowSet`, `forwardCheck`, and `backwardCheck` in the provided code exactly match the conditions described in the text (completeness as equivalence, forward check as implication to shadows, backward check as implication from conjunction of shadows). The theorem concludes the logical equivalence $\\hat{T} \\leftrightarrow T$, which is the correct mathematical consequence of these hypotheses.",
+    "note_ko": "Lean 문장은 인간 설명을 정확하게 형식화했습니다. 제공된 코드의 `completeShadowSet`, `forwardCheck`, `backwardCheck` 정의는 텍스트에 설명된 조건(완전성을 등가로, forward check를 그림자들에 대한 함의로, backward check를 그림자 논리곱으로부터의 함의로)과 정확히 일치합니다. 정리는 논리적 동치 $\\hat{T} \\leftrightarrow T$를 결론으로 내리며, 이는 가설들로부터 도출되는 올바른 수학적 결과입니다."
+  }
+}

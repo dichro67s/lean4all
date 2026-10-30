@@ -1,0 +1,21 @@
+{
+  "id": "T0015",
+  "hash": "00c4aa19e714b255",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-30T07:38:14+00:00",
+  "en": "Let $\\hat{T}$ and $S$ be propositions such that $S$ is logically equivalent to $\\text{True}$. Then $\\hat{T}$ implies $S$.",
+  "ko": "$\\hat{T}$와 $S$를 명제라 하고, $S$가 $\\text{True}$와 논리적으로 동치라고 하자. 이때 $\\hat{T}$가 성립하면 $S$가 성립한다.",
+  "caveats_en": [
+    "The hypothesis $S \\leftrightarrow \\text{True}$ means $S$ is always true, so the conclusion $S$ holds regardless of $\\hat{T}$.",
+    "The definitions from `Arxiv260829270` are imported but not used in the statement of this specific theorem."
+  ],
+  "caveats_ko": [
+    "가정 $S \\leftrightarrow \\text{True}$는 $S$가 항상 참임을 의미하므로, $\\hat{T}$의 값과 무관하게 결론 $S$는 성립한다.",
+    "`Arxiv260829270`의 정의들이 임포트되었으나, 이 특정 정리의 진술에는 사용되지 않았다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement formalizes the implication $\\hat{T} \\to S$ under the hypothesis $S \\leftrightarrow \\text{True}$, which exactly matches the human description's claim that a tautological shadow $S$ is implied by any $\\hat{T}$.",
+    "note_ko": "Lean 문장은 $S \\leftrightarrow \\text{True}$라는 가정 하에 $\\hat{T} \\to S$를 함의하는 것을 형식화하며, 이는 인간 설명의 '항진명제인 그림자 $S$는 임의의 $\\hat{T}$에 의해 함의된다'는 주장과 정확히 일치합니다."
+  }
+}

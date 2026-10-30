@@ -1,0 +1,22 @@
+id: T0012
+title: Logical Equivalence Implies SA-Pass
+title_ko: 논리적 동치는 SA-Pass 통과를 함의함
+description: |-
+  Let $T$ be the intended theorem, $\widehat{T}$ be a generated statement, and $\mathcal{S}$ be a set of shadow statements. If $\widehat{T}$ is logically equivalent to $T$ (i.e., $\widehat{T} \leftrightarrow T$) and $\mathcal{S}$ is a complete shadow set for $T$, then $\widehat{T}$ passes the SA-Pass metric. Specifically, the forward check holds ($\forall S \in \mathcal{S}, \widehat{T} \to S$) and the backward check holds ($(\forall S \in \mathcal{S}, S) \to \widehat{T}$).
+
+  *Derived from the definitions of arXiv:2608.29270; not a theorem stated in the paper (basis: Definition 3 defines completeness as $T \Rightarrow S_i$ and $\bigwedge S_i \Rightarrow T$. If $\widehat T \Leftrightarrow T$, then $\widehat T \Rightarrow T \Rightarrow S_i$ (forward check holds) and $\bigwedge S_i \Rightarrow T \Leftrightarrow \widehat T$ (backward check holds). Definition 4 states that passing is defined by these checks plus compilation.). Machine-formalized; see the mission blueprint.*
+description_ko: |-
+  $T$를 의도된 정리, $\widehat{T}$를 생성된 명제, $\mathcal{S}$를 그림자 명제들의 집합이라고 하자. 만약 $\widehat{T}$가 $T$와 논리적으로 동치라면 (즉, $\widehat{T} \leftrightarrow T$) 그리고 $\mathcal{S}$가 $T$에 대한 완전한 그림자 집합이라면, $\widehat{T}$는 SA-Pass 지표를 통과한다. 구체적으로, 전방 검사($\forall S \in \mathcal{S}, \widehat{T} \to S$)와 후방 검사($(\forall S \in \mathcal{S}, S) \to \widehat{T}$)가 모두 성립한다.
+
+  *arXiv:2608.29270의 정의에서 유도한 성질이며, 논문에 명시된 정리가 아닙니다. 기계가 형식화한 명제이며, 미션 블루프린트를 참고하세요.*
+preamble: |-
+  import Mathlib
+  import Lean4All.Definitions.Arxiv260829270
+  open Arxiv260829270
+statement: '(T T_hat : Prop) (S : Finset Prop) (h_equiv : T_hat ↔ T) (h_complete : completeShadowSet T
+  S) : forwardCheck T_hat S ∧ backwardCheck T_hat S'
+tags:
+- Mathematics
+source: arXiv:2608.29270, derived from the definitions
+mission: arxiv-2608-29270
+proposer: dichro67s

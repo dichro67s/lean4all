@@ -1,0 +1,21 @@
+id: T0015
+title: Forward Check Passes for Tautological Shadows
+title_ko: 항진 명제 그림자에 대한 전방 검사 통과
+description: |-
+  Let $\widehat{T}$ be a generated statement and $S$ be a shadow statement. If $S$ is logically true (i.e., $S \Leftrightarrow \top$), then $\widehat{T}$ passes the forward check for $S$ (i.e., $\widehat{T} \Rightarrow S$).
+
+  *Derived from the definitions of arXiv:2608.29270; not a theorem stated in the paper (basis: Definition of `forwardCheck` requires $\widehat T \Rightarrow S$. In classical logic, any proposition implies a tautology ($\top$). Therefore, if $S$ is a tautology, the implication holds regardless of $\widehat T$.). Machine-formalized; see the mission blueprint.*
+description_ko: |-
+  생성된 명제 $\widehat{T}$와 그림자 명제 $S$가 주어졌을 때, $S$가 논리적으로 참이면(즉, $S \Leftrightarrow \top$), $\widehat{T}$는 $S$에 대한 전방 검사를 통과합니다(즉, $\widehat{T} \Rightarrow S$가 성립합니다).
+
+  *arXiv:2608.29270의 정의에서 유도한 성질이며, 논문에 명시된 정리가 아닙니다. 기계가 형식화한 명제이며, 미션 블루프린트를 참고하세요.*
+preamble: |-
+  import Mathlib
+  import Lean4All.Definitions.Arxiv260829270
+  open Arxiv260829270
+statement: '(T_hat : Prop) (S : Prop) (hS : S ↔ True) : T_hat → S'
+tags:
+- Mathematics
+source: arXiv:2608.29270, derived from the definitions
+mission: arxiv-2608-29270
+proposer: dichro67s

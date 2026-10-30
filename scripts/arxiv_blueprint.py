@@ -59,8 +59,9 @@ CATEGORY_TAGS = {
     "cs.DS": "Algorithms", "cs.CC": "Computational Complexity", "cs.DM": "Discrete Mathematics",
     "cs.LO": "Logic in CS", "cs.IT": "Information Theory", "quant-ph": "Quantum Computing",
 }
-FORMAL_KINDS = {"theorem", "lemma", "proposition", "corollary", "claim", "conjecture", "fact", "observation"}
-MILESTONE_KINDS = {"theorem", "proposition", "corollary"}
+FORMAL_KINDS = {"theorem", "lemma", "proposition", "corollary", "claim", "conjecture", "fact", "observation",
+                "property"}  # "property": derived from a paper's definitions when it states no theorems
+MILESTONE_KINDS = {"theorem", "proposition", "corollary", "property"}
 DEFAULT_ENVS = {"theorem": "Theorem", "thm": "Theorem", "lemma": "Lemma", "lem": "Lemma",
                 "proposition": "Proposition", "prop": "Proposition", "corollary": "Corollary",
                 "cor": "Corollary", "definition": "Definition", "defn": "Definition", "dfn": "Definition",
@@ -472,6 +473,10 @@ Hard rules:
 - The definition must be mathematically faithful to the given meaning. NEVER write placeholders, \
 dummy values (like `0`), `sorry`, `admit`, `axiom`, `import`, `namespace`, `#eval`, or commentary.
 - If you cannot define a concept faithfully, leave it out entirely.
+- Things the paper treats as external (whether code compiles, a human expert's verdict, a model's \
+output, a checker that may time out) must NOT be defined as constants. Either give them their \
+mathematical meaning (e.g. a forward check of T̂ against S is the proposition `T̂ → S`), or make \
+them explicit parameters of the definitions that use them (e.g. `(compiles : Prop → Bool)`).
 - Prefer Mathlib notions (Finset, Set.ncard, sInf, Collinear ℝ, EuclideanGeometry.Cospherical, \
 SimpleGraph, ...). Use `noncomputable def` with `sInf`/`sSup`/`Set.ncard` for extremal quantities.
 - Explicitly bind all variables (autoImplicit is off)."""
@@ -557,6 +562,43 @@ def compile_spans(header: str, chunks: list[tuple[str, str]], footer: str = "") 
     return by, head
 
 
+PLACEHOLDER = re.compile(
+    r":=\s*(?:fun\b[^=]*=>\s*)?(?:true|false|True|False|0|1|0\.0|1\.0|∅|default|\(\)|Bool\.true|Bool\.false)\s*$")
+
+DEFAUDIT_SYSTEM = """You review shared Lean definitions written for a paper-formalization project. \
+For each definition decide whether it is FAITHFUL to the intended meaning. Reject (faithful=false) any \
+placeholder or stub: a constant function, a value that ignores its inputs, a definition that makes \
+the concept trivially true/false, or one that silently changes the meaning. External oracles taken \
+as explicit parameters are fine. Give a one-sentence reason."""
+
+DEFAUDIT_SCHEMA = {"type": "object", "properties": {"verdicts": {"type": "array", "items": {
+    "type": "object", "properties": {"name": {"type": "string"}, "faithful": {"type": "boolean"},
+                                     "reason": {"type": "string"}}, "required": ["name", "faithful", "reason"]}}},
+    "required": ["verdicts"]}
+
+
+def placeholder_problem(code: str) -> str | None:
+    body = re.sub(r"/--.*?-/", "", code, flags=re.S).strip()
+    if PLACEHOLDER.search(" ".join(body.split())):
+        return ("placeholder definition (its value ignores the inputs). Define it faithfully, or make the "
+                "external oracle an explicit parameter of the definitions that use it.")
+    return None
+
+
+def audit_definitions(defs: list[dict], plan: dict, log) -> dict:
+    if not defs:
+        return {}
+    out = safe_chat(DEFAUDIT_SYSTEM, "Intended meanings:\n" +
+                    "\n".join(f"- {c['name']}: {c['meaning']}" for c in plan["concepts"]) +
+                    "\n\nDefinitions:\n" + "\n\n".join(f"[{d['name']}]\n```lean\n{d['lean']}\n```" for d in defs),
+                    DEFAUDIT_SCHEMA, 3000, log)
+    if not out:
+        return {d["name"]: "the definition audit failed" for d in defs}
+    names = {d["name"] for d in defs}
+    return {v["name"]: f"not faithful: {v['reason']}" for v in out["verdicts"]
+            if not v["faithful"] and v["name"] in names}
+
+
 def build_definitions(mod: str, plan: dict, prose: str, log) -> str:
     if not plan["concepts"]:
         log("definitions: none needed")
@@ -569,10 +611,15 @@ def build_definitions(mod: str, plan: dict, prose: str, log) -> str:
         chunks, problems = [], {}
         for d in defs:
             d["lean"] = clean_decl(d["lean"])
-            bad = unsafe(d["lean"]) or (None if d["lean"] else "empty")
+            bad = unsafe(d["lean"]) or placeholder_problem(d["lean"]) or (None if d["lean"] else "empty")
             (problems.__setitem__(d["name"], bad) if bad else chunks.append((d["name"], d["lean"])))
         errs, head = compile_spans(f"{HEADER}\nnamespace {mod}\n", chunks, f"\nend {mod}\n") if chunks else ({}, [])
         problems.update(errs)
+        compiled = [d for d in defs if d["name"] not in problems]
+        bad_meaning = audit_definitions(compiled, plan, log)
+        if bad_meaning:
+            log(f"  definition audit rejected: {', '.join(bad_meaning)}")
+        problems.update(bad_meaning)
         good = [d for d in defs if d["name"] not in problems]
         log(f"definitions round {rnd}: {len(good)}/{len(defs)} compile")
         if not problems or rnd == ROUNDS:
@@ -685,6 +732,42 @@ def audit(it: dict, defs: str) -> tuple[str, str]:
     return au["verdict"], au.get("note_en", "")
 
 
+PROPS_SYSTEM = """This paper defines mathematical concepts but states no theorems. The team will \
+formalize its definitions in Lean and prove properties of them, so that the definitions are \
+checked and usable. Propose 3-8 precise mathematical properties of the definitions that:
+- follow from the definitions (the paper relies on them, implies them, or they are basic sanity \
+checks: soundness/completeness, monotonicity, edge cases, relationships between the defined notions);
+- are TRUE and provable from the definitions alone (no empirical or experimental claims, no claims \
+about specific models, datasets or numbers measured in experiments);
+- are stated in terms of the given Lean definitions.
+For each give `title_en`/`title_ko` (short), `statement_en`/`statement_ko` (precise, LaTeX in $…$), \
+and `basis`: which definitions and which passage of the paper it comes from. Put the most important \
+property first."""
+
+PROPS_SCHEMA = {
+    "type": "object",
+    "properties": {"properties": {"type": "array", "items": {"type": "object", "properties": {
+        "title_en": {"type": "string"}, "title_ko": {"type": "string"},
+        "statement_en": {"type": "string"}, "statement_ko": {"type": "string"},
+        "basis": {"type": "string"}},
+        "required": ["title_en", "title_ko", "statement_en", "statement_ko", "basis"]}}},
+    "required": ["properties"],
+}
+
+
+def derive_properties(meta: dict, items: list[dict], plan: dict, defs: str, prose: str, log) -> list[dict]:
+    paper_defs = "\n\n".join(f"{it['display']}: {it['tex'][:1500]}" for it in items if it["kind"] == "definition")
+    out = safe_chat(PROPS_SYSTEM, f"Paper: {meta['title']}\nAbstract: {meta['abstract']}\n\n"
+                    f"The paper's definitions:\n{paper_defs}\n\nShared Lean definitions:\n```lean\n{defs}\n```\n\n"
+                    f"Paper text:\n{prose[:8000]}", PROPS_SCHEMA, 6000, log).get("properties", [])[:8]
+    log(f"  no stated theorems: derived {len(out)} properties of the definitions")
+    return [{"key": f"property-{i + 1}", "kind": "property", "display": f"Property {i + 1}",
+             "number": str(i + 1), "name": "", "section": "Derived from the definitions",
+             "tex": f"{p['statement_en']}\n\n(Basis: {p['basis']})", "proof_tex": "", "uses": [],
+             "derived": True, "basis": p["basis"], "title_en": p["title_en"], "title_ko": p["title_ko"]}
+            for i, p in enumerate(out)]
+
+
 def paper_prose(tex: str) -> str:
     body = tex.split("\\begin{document}", 1)[-1]
     body = re.sub(r"\\begin\{(figure|table|tikzpicture)\*?\}.*?\\end\{\1\*?\}", "", body, flags=re.S)
@@ -727,12 +810,21 @@ def write_outputs(meta: dict, items: list[dict], plan: dict, defs: str, macros_k
         (L.DEFINITIONS / f"{mod}.lean").write_text(defs_module(mod, defs), encoding="utf-8")
     for it in good:
         cite = f"{it['display']}{' (' + it['name'] + ')' if it['name'] else ''} in arXiv:{aid}"
+        if it.get("derived"):
+            note_en = (f"*Derived from the definitions of arXiv:{aid}; not a theorem stated in the paper "
+                       f"(basis: {it['basis']}). Machine-formalized; see the mission blueprint.*")
+            note_ko = (f"*arXiv:{aid}의 정의에서 유도한 성질이며, 논문에 명시된 정리가 아닙니다. "
+                       "기계가 형식화한 명제이며, 미션 블루프린트를 참고하세요.*")
+        else:
+            note_en = f"*{cite}. Machine-formalized; see the mission blueprint.*"
+            note_ko = f"*arXiv:{aid}의 {it['display']}. 기계가 형식화한 명제이며, 미션 블루프린트를 참고하세요.*"
         dump_yaml(L.THEOREMS / f"{it['theorem']}.yaml", {
             "id": it["theorem"], "title": it["title_en"], "title_ko": it["title_ko"],
-            "description": f"{it['statement_en']}\n\n*{cite}. Machine-formalized; see the mission blueprint.*",
-            "description_ko": f"{it['statement_ko']}\n\n*arXiv:{aid}의 {it['display']}. 기계가 형식화한 명제이며, 미션 블루프린트를 참고하세요.*",
+            "description": f"{it['statement_en']}\n\n{note_en}",
+            "description_ko": f"{it['statement_ko']}\n\n{note_ko}",
             "preamble": preamble, "statement": it["lean"], "tags": tags,
-            "source": f"arXiv:{aid}, {it['display']}", "mission": sl, "proposer": captain,
+            "source": f"arXiv:{aid}, {'derived from the definitions' if it.get('derived') else it['display']}",
+            "mission": sl, "proposer": captain,
         })
     bykey = {it["key"]: it for it in items}
     goal_key = plan["goal"] if plan["goal"] in bykey and bykey[plan["goal"]].get("theorem") else None
@@ -743,15 +835,21 @@ def write_outputs(meta: dict, items: list[dict], plan: dict, defs: str, macros_k
             (good[-1]["key"] if good else None)
     if goal_key and goal_key not in ms_keys:
         ms_keys.append(goal_key)
+    derived_only = bool(items) and all(it.get("derived") for it in items if it["kind"] in FORMAL_KINDS) and \
+        any(it["kind"] in FORMAL_KINDS for it in items)
     authors = ", ".join(meta["authors"][:4]) + (" et al." if len(meta["authors"]) > 4 else "")
     mission = {
         "id": sl, "title": meta["title"], "title_ko": plan.get("title_ko") or meta["title"],
         "type": "Research Paper", "tags": tags, "captain": captain, "reviewed": False,
         "summary": plan["summary_en"], "summary_ko": plan["summary_ko"],
-        "description": (f"{meta['abstract']}\n\n**Machine-generated blueprint.** The formal statements were "
+        "description": (f"{meta['abstract']}\n\n" + ("**This paper states no theorems.** This mission formalizes its "
+                        "definitions and proves properties derived from them; those properties are not claims "
+                        "made in the paper.\n\n" if derived_only else "") + "**Machine-generated blueprint.** The formal statements were "
                         "written by Qwen and compile against Mathlib, but a moderator has not checked them "
                         "against the paper yet. Read the blueprint before contributing."),
-        "description_ko": ("**기계가 생성한 블루프린트입니다.** 형식 명제는 Qwen이 작성했고 Mathlib에서 컴파일되지만, "
+        "description_ko": (("**이 논문에는 정리가 없습니다.** 이 미션은 논문의 정의를 형식화하고, 그 정의에서 유도한 성질을 "
+                            "증명합니다. 이 성질들은 논문이 주장한 내용이 아닙니다.\n\n" if derived_only else "") +
+                           "**기계가 생성한 블루프린트입니다.** 형식 명제는 Qwen이 작성했고 Mathlib에서 컴파일되지만, "
                            "아직 운영자가 논문과 대조하지 않았습니다. 기여하기 전에 블루프린트를 먼저 읽으세요.\n\n"
                            f"{plan['summary_ko']}"),
         "source": {"title": f"{authors}, {meta['title']} (arXiv:{aid})", "url": meta["url"]},
@@ -773,13 +871,14 @@ def write_outputs(meta: dict, items: list[dict], plan: dict, defs: str, macros_k
         "id": sl, "arxiv": aid, "title": meta["title"], "title_ko": plan.get("title_ko"),
         "authors": meta["authors"], "abstract": meta["abstract"], "categories": meta["categories"],
         "url": meta["url"], "published": meta["published"], "mission": sl if has_results else None,
-        "status": "active" if has_results else "no-results", "module": mod if defs else None,
+        "status": ("derived" if derived_only else "active") if has_results else "no-results",
+        "module": mod if defs and has_results else None,
         "preamble": preamble, "source_kind": source_kind, "model": MODEL, "issue": issue,
         "generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "conventions": plan["conventions"], "conventions_ko": plan["conventions_ko"],
         "notation": plan["notation"], "definitions": defs_module(mod, defs) if defs else "",
         "macros": macros_katex, "goal": goal_key, "milestones": ms_keys,
-        "items": [{k: it.get(k) for k in ("key", "kind", "display", "number", "name", "section", "tex",
+        "items": [{k: it.get(k) for k in ("key", "kind", "display", "number", "name", "section", "tex", "derived", "basis",
                                           "uses", "title_en", "title_ko", "statement_en", "statement_ko",
                                           "lean", "theorem", "note")} for it in items],
     }
@@ -797,6 +896,9 @@ def blueprint_md(bp: dict) -> str:
              f"arXiv:{bp['arxiv']} · {', '.join(bp['authors'])} · mission `{bp['mission']}`", "",
              "> **Agents: read this before working on any theorem in this mission.** Everyone formalizing",
              "> this paper must follow the same conventions and definitions, so their proofs fit together.", "",
+             *([("> **This paper states no theorems.** The results below are properties derived from its "
+                 "definitions so they can be formalized and checked; they are not claims made in the paper."), ""]
+               if bp.get("status") == "derived" else []),
              "## Rules for this mission", "",
              "1. Use the shared definitions" + (f": `import Lean4All.Definitions.{bp['module']}` and `open {bp['module']}`."
                                                  if bp["module"] else " in Mathlib only; there is no shared module yet."),
@@ -861,10 +963,17 @@ def run(aid: str, captain: str, issue: int | None = None, log=print) -> dict:
                      PLAN_SCHEMA, 6000, log, tries=3)
     if not plan:
         raise RuntimeError("the model could not produce a plan")
-    if not any(it["kind"] in FORMAL_KINDS for it in items):
-        log("  no theorem-like results: publishing a blueprint without a mission")
+    has_results = any(it["kind"] in FORMAL_KINDS for it in items)
+    has_defs = any(it["kind"] == "definition" for it in items)
+    if not has_results and not has_defs:
+        log("  no theorem-like results and no definitions: publishing a blueprint without a mission")
         plan["concepts"] = []
     defs = build_definitions(mod, plan, prose, log)
+    if not has_results and defs:
+        props = derive_properties(meta, items, plan, defs, prose, log)
+        items += props
+        plan["milestones"] = [p["key"] for p in props]
+        plan["goal"] = props[0]["key"] if props else ""
     formalize_items(items, mod, defs, plan, macros, log)
     bp = publish(meta, items, plan, defs, macros_katex, kind, captain, issue, log)
     return bp

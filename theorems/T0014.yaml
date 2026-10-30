@@ -1,0 +1,21 @@
+id: T0014
+title: Completeness of the Empty Shadow Set
+title_ko: 빈 그림자 집합의 완전성
+description: |-
+  The empty set $\emptyset$ is a complete shadow set for the intended theorem $T$ if and only if $T$ is logically true ($T \Leftrightarrow \top$).
+
+  *Derived from the definitions of arXiv:2608.29270; not a theorem stated in the paper (basis: Definition 3 (and Lean `completeShadowSet`) defines completeness as $(\forall s \in S, T \to s) \land ((\forall s \in S, s) \to T)$. For $S = \emptyset$, the first conjunct $\forall s \in \emptyset, T \to s$ is vacuously true. The second conjunct $(\forall s \in \emptyset, s) \to T$ simplifies to $\top \to T$, which is equivalent to $T$. Thus, completeness holds iff $T$ is true.). Machine-formalized; see the mission blueprint.*
+description_ko: |-
+  빈 집합 $\emptyset$가 의도된 정리 $T$에 대한 완전한 그림자 집합일 필요충분조건은 $T$가 논리적으로 참인 것($T \Leftrightarrow \top$)이다.
+
+  *arXiv:2608.29270의 정의에서 유도한 성질이며, 논문에 명시된 정리가 아닙니다. 기계가 형식화한 명제이며, 미션 블루프린트를 참고하세요.*
+preamble: |-
+  import Mathlib
+  import Lean4All.Definitions.Arxiv260829270
+  open Arxiv260829270
+statement: '(T : Prop) : completeShadowSet T ∅ ↔ T'
+tags:
+- Mathematics
+source: arXiv:2608.29270, derived from the definitions
+mission: arxiv-2608-29270
+proposer: dichro67s

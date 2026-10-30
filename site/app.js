@@ -538,7 +538,7 @@
       const stmt = (ko && it.statement_ko) || it.statement_en;
       const uses = (it.uses || []).filter((u) => bykey[u]).map((u) => `<a href="#bp-${esc(u)}" data-jump="bp-${esc(u)}">${esc(bykey[u].display)}</a>`).join(", ");
       return `<div class="card bp-item ${th ? "" : "bp-item-todo"}" id="bp-${esc(it.key)}">
-        <div class="row"><b>${esc(it.display)}</b>${it.name ? `<span class="muted small">${esc(it.name)}</span>` : ""}<span class="spacer"></span>
+        <div class="row"><b>${esc(it.display)}</b>${it.name ? `<span class="muted small">${esc(it.name)}</span>` : ""}${it.derived ? `<span class="tag">${t("bp.derived")}</span>` : ""}<span class="spacer"></span>
           ${th ? `${thmLink(th.id)} ${chip(th.status)}` : `<span class="tag">${t("bp.notFormal")}</span>`}</div>
         ${title ? `<div class="bp-item-title">${esc(title)}</div>` : ""}
         <div class="prose small">${stmt ? md(stmt) : `<code class="tex">${esc(it.tex.slice(0, 400))}</code>`}</div>
@@ -584,6 +584,7 @@
         <h1>${esc((ko && bp.title_ko) || bp.title)}</h1>
         <p class="muted" style="margin:0">${esc(bp.authors.join(", "))}</p>
       </div>
+      ${bp.status === "derived" ? `<p class="callout" style="margin-top:0">${t("bp.derivedNote")}</p>` : ""}
       ${join}
       ${empty ? `<div class="bp-side bp-side-wide" style="margin-top:28px"><div class="label">${t("bp.details")}</div>${details}</div>` : `
       <div class="two-col" style="margin-top:28px">

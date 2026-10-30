@@ -1,0 +1,22 @@
+id: T0011
+title: SA-Pass with Complete Shadow Set Implies Logical Equivalence
+title_ko: 완전한 그림자 집합에 대한 SA-Pass 통과가 논리적 동치를 함의함
+description: |-
+  Let $T$ be the intended theorem and $\widehat{T}$ be a generated statement. Let $\mathcal{S}$ be a finite set of shadow statements. If $\mathcal{S}$ is a complete shadow set for $T$ (meaning $\bigwedge_{S \in \mathcal{S}} S \Leftrightarrow T$) and $\widehat{T}$ passes the SA-Pass metric with respect to $\mathcal{S}$ (meaning $\widehat{T} \Rightarrow S$ for all $S \in \mathcal{S}$ and $\bigwedge_{S \in \mathcal{S}} S \Rightarrow \widehat{T}$), then $\widehat{T}$ is logically equivalent to $T$ ($\widehat{T} \Leftrightarrow T$).
+
+  *Derived from the definitions of arXiv:2608.29270; not a theorem stated in the paper (basis: Definition 4 states that passing requires forward checks ($\widehat T \Rightarrow S_i$ for all $i$) and a backward check ($\bigwedge S_i \Rightarrow \widehat T$). Definition 3 states that for a complete shadow set, $\bigwedge S_i \Leftrightarrow T$. Combining these: $\widehat T \Rightarrow S_i$ implies $\widehat T \Rightarrow \bigwedge S_i$, and since $\bigwedge S_i \Leftrightarrow T$, we have $\widehat T \Rightarrow T$. Conversely, $\bigwedge S_i \Rightarrow \widehat T$ and $T \Rightarrow \bigwedge S_i$ (from completeness) imply $T \Rightarrow \widehat T$. Thus $\widehat T \Leftrightarrow T$.). Machine-formalized; see the mission blueprint.*
+description_ko: |-
+  $T$를 의도된 정리, $\widehat{T}$를 생성된 명제라고 하자. $\mathcal{S}$를 그림자 명제들의 유한 집합이라고 하자. 만약 $\mathcal{S}$가 $T$에 대한 완전한 그림자 집합(즉, $\bigwedge_{S \in \mathcal{S}} S \Leftrightarrow T$)이고, $\widehat{T}$가 $\mathcal{S}$에 대해 SA-Pass 지표(즉, 모든 $S \in \mathcal{S}$에 대해 $\widehat{T} \Rightarrow S$이며 $\bigwedge_{S \in \mathcal{S}} S \Rightarrow \widehat{T}$)를 통과한다면, $\widehat{T}$는 $T$와 논리적으로 동치($\widehat{T} \Leftrightarrow T$)이다.
+
+  *arXiv:2608.29270의 정의에서 유도한 성질이며, 논문에 명시된 정리가 아닙니다. 기계가 형식화한 명제이며, 미션 블루프린트를 참고하세요.*
+preamble: |-
+  import Mathlib
+  import Lean4All.Definitions.Arxiv260829270
+  open Arxiv260829270
+statement: '(T T_hat : Prop) (S : Finset Prop) (h_complete : completeShadowSet T S) (h_forward : forwardCheck
+  T_hat S) (h_backward : backwardCheck T_hat S) : T_hat ↔ T'
+tags:
+- Mathematics
+source: arXiv:2608.29270, derived from the definitions
+mission: arxiv-2608-29270
+proposer: dichro67s

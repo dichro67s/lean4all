@@ -1,0 +1,21 @@
+{
+  "id": "T0014",
+  "hash": "f149d68e4e13486a",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-30T07:38:08+00:00",
+  "en": "For any proposition $T$, the empty set $\\emptyset$ is a complete shadow set for $T$ if and only if $T$ holds.",
+  "ko": "임의의 명제 $T$에 대하여, 공집합 $\\emptyset$가 $T$의 완전한 그림자 집합(complete shadow set)일 필요충분조건은 $T$가 성립하는 것이다.",
+  "caveats_en": [
+    "The definition of `completeShadowSet T S` requires that $T$ implies every element of $S$ and that the conjunction of all elements of $S$ implies $T$.",
+    "For the empty set $S = \\emptyset$, the condition '$\\forall s \\in S, T \\to s$' is vacuously true, while '$(\\forall s \\in S, s) \\to T$' simplifies to $\\text{True} \\to T$, which is equivalent to $T$."
+  ],
+  "caveats_ko": [
+    "`completeShadowSet T S`의 정의는 $T$가 $S$의 모든 원소를 함의하고, $S$의 모든 원소의 논리곱이 $T$를 함의함을 요구한다.",
+    "공집합 $S = \\emptyset$의 경우, '$\\forall s \\in S, T \\to s$' 조건은 공진리(vacuously true)이며, '$(\\forall s \\in S, s) \\to T$' 조건은 $\\text{True} \\to T$, 즉 $T$와 동치이다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement correctly formalizes the human description. For the empty set, the first conjunct of `completeShadowSet` is vacuously true, and the second conjunct simplifies to `T`, making the equivalence `completeShadowSet T ∅ ↔ T` mathematically identical to the description's claim that completeness holds iff T is true.",
+    "note_ko": "Lean 문장은 인간 설명을 올바르게 형식화했습니다. 공집합의 경우 `completeShadowSet`의 첫 번째 조건은 공진리(vacuously true)이고, 두 번째 조건은 `T`로 단순화되므로, `completeShadowSet T ∅ ↔ T`라는 동치는 '완전성이 성립할 필요충분조건은 T가 참인 것'이라는 설명과 수학적으로 동일합니다."
+  }
+}

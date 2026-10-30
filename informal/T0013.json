@@ -1,0 +1,21 @@
+{
+  "id": "T0013",
+  "hash": "0e183bfa65af48b6",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-30T07:37:59+00:00",
+  "en": "Let $T_{\\hat{}}$ be a proposition and $S_1, S_2$ be finite sets of propositions. If $S_1 \\subseteq S_2$ and $T_{\\hat{}}$ implies every proposition in $S_2$ (i.e., $\\forall s \\in S_2, T_{\\hat{}} \\to s$), then $T_{\\hat{}}$ implies every proposition in $S_1$.",
+  "ko": "명제 $T_{\\hat{}}$와 명제들의 유한 집합 $S_1, S_2$가 주어졌을 때, $S_1 \\subseteq S_2$이고 $T_{\\hat{}}$가 $S_2$의 모든 명제를 함의한다면(즉, $\\forall s \\in S_2, T_{\\hat{}} \\to s$), $T_{\\hat{}}$는 $S_1$의 모든 명제를 함의한다.",
+  "caveats_en": [
+    "The predicate `forwardCheck T_hat S` is defined as $\\forall s \\in S, T_{\\hat{}} \\to s$, meaning $T_{\\hat{}}$ is a sufficient condition for each element in the set.",
+    "The sets $S_1$ and $S_2$ are of type `Finset Prop`, representing finite collections of propositions, not logical conjunctions themselves."
+  ],
+  "caveats_ko": [
+    "`forwardCheck T_hat S`는 $\\forall s \\in S, T_{\\hat{}} \\to s$로 정의되며, 이는 $T_{\\hat{}}$가 집합 내의 각 원소에 대한 충분조건임을 의미한다.",
+    "$S_1$과 $S_2$는 `Finset Prop` 타입으로, 명제들의 유한 집합을 나타내며 논리적 곱(conjunction) 그 자체는 아니다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement correctly formalizes the monotonicity of the forward check: if a proposition implies all elements of a superset, it implies all elements of any subset. The definitions and logical structure align perfectly with the human description.",
+    "note_ko": "Lean 문장은 전방 검사(forward check)의 단조성을 정확히 형식화했습니다. 명제가 상위 집합의 모든 원소를 함의하면 하위 집합의 모든 원소도 함의한다는 논리적 구조가 인간 설명과 완벽하게 일치합니다."
+  }
+}

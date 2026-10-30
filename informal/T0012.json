@@ -1,0 +1,21 @@
+{
+  "id": "T0012",
+  "hash": "c7c742a7716945de",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-30T07:37:50+00:00",
+  "en": "Let $T$ and $\\hat{T}$ be propositions, and let $S$ be a finite set of propositions. Suppose that $\\hat{T}$ is logically equivalent to $T$, and that $S$ is a complete shadow set for $T$ (meaning that $T$ implies every element of $S$, and the conjunction of all elements of $S$ implies $T$). Then $\\hat{T}$ implies every element of $S$, and the conjunction of all elements of $S$ implies $\\hat{T}$.",
+  "ko": "$T$와 $\\hat{T}$를 명제, $S$를 명제들의 유한 집합이라고 하자. $\\hat{T}$가 $T$와 논리적으로 동치이고, $S$가 $T$에 대한 완전한 그림자 집합(complete shadow set)이라고 가정하자. 즉, $T$가 $S$의 모든 원소를 함의하고, $S$의 모든 원소의 논리곱이 $T$를 함의한다. 이때 $\\hat{T}$는 $S$의 모든 원소를 함의하며, $S$의 모든 원소의 논리곱은 $\\hat{T}$를 함의한다.",
+  "caveats_en": [
+    "The definition of `completeShadowSet` requires both directions: $T \\to s$ for all $s \\in S$ and $(\\forall s \\in S, s) \\to T$.",
+    "`forwardCheck` and `backwardCheck` are defined analogously to the two parts of `completeShadowSet`, but applied to $\\hat{T}$ instead of $T$."
+  ],
+  "caveats_ko": [
+    "`completeShadowSet`의 정의는 두 방향을 모두 포함한다: 모든 $s \\in S$에 대해 $T \\to s$이고, $S$의 모든 원소의 논리곱이 $T$를 함의해야 한다.",
+    "`forwardCheck`와 `backwardCheck`은 `completeShadowSet`의 두 부분과 유사하게 정의되지만, $T$ 대신 $\\hat{T}$에 적용된다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement correctly formalizes the human description: given logical equivalence between T and T_hat and completeness of S for T, it proves both forwardCheck and backwardCheck for T_hat and S. The definitions used align perfectly with the mathematical content described.",
+    "note_ko": "Lean 문장은 인간 설명을 정확히 형식화합니다: T와 T_hat의 논리적 동치성과 T에 대한 S의 완전성이 주어지면, T_hat과 S에 대해 forwardCheck와 backwardCheck가 모두 성립함을 증명합니다. 사용된 정의들은 설명된 수학적 내용과 완벽하게 일치합니다."
+  }
+}

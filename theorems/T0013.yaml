@@ -1,0 +1,22 @@
+id: T0013
+title: Monotonicity of Forward Check
+title_ko: 순방향 검사(Foward Check)의 단조성
+description: |-
+  Let $\mathcal{S}_1$ and $\mathcal{S}_2$ be two shadow sets such that $\mathcal{S}_1 \subseteq \mathcal{S}_2$. If a generated statement $\widehat{T}$ passes the forward checks for $\mathcal{S}_2$ (i.e., $\forall s \in \mathcal{S}_2, \widehat{T} \Rightarrow s$), then it also passes the forward checks for $\mathcal{S}_1$.
+
+  *Derived from the definitions of arXiv:2608.29270; not a theorem stated in the paper (basis: Definition of `forwardCheck` in Lean: `∀ s ∈ S, T_hat → s`. This is a universal quantification over the set. If the property holds for all elements in a superset, it necessarily holds for all elements in a subset. This is a basic logical property of universal quantification over sets.). Machine-formalized; see the mission blueprint.*
+description_ko: |-
+  $\mathcal{S}_1 \subseteq \mathcal{S}_2$인 두 그림자 집합 $\mathcal{S}_1$과 $\mathcal{S}_2$가 있다고 하자. 생성된 명제 $\widehat{T}$가 $\mathcal{S}_2$에 대한 순방향 검사를 통과하면(즉, $\forall s \in \mathcal{S}_2, \widehat{T} \Rightarrow s$), $\mathcal{S}_1$에 대한 순방향 검사도 통과한다.
+
+  *arXiv:2608.29270의 정의에서 유도한 성질이며, 논문에 명시된 정리가 아닙니다. 기계가 형식화한 명제이며, 미션 블루프린트를 참고하세요.*
+preamble: |-
+  import Mathlib
+  import Lean4All.Definitions.Arxiv260829270
+  open Arxiv260829270
+statement: '(T_hat : Prop) (S₁ S₂ : Finset Prop) (h_sub : S₁ ⊆ S₂) (h_fwd : forwardCheck T_hat S₂) : forwardCheck
+  T_hat S₁'
+tags:
+- Mathematics
+source: arXiv:2608.29270, derived from the definitions
+mission: arxiv-2608-29270
+proposer: dichro67s

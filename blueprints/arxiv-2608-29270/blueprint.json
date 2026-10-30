@@ -2,7 +2,7 @@
   "id": "arxiv-2608-29270",
   "arxiv": "2608.29270",
   "title": "SHADOWBENCH: Toward Reliable Automatic Evaluation of Semantic Alignment in Autoformalization",
-  "title_ko": "SHADOWBENCH: 자동 형식화에서 의미적 정렬의 신뢰할 수 있는 자동 평가를 향하여",
+  "title_ko": "SHADOWBENCH: 자동 형식화에서 의미 정렬의 신뢰할 수 있는 자동 평가를 향하여",
   "authors": [
     "Hojae Han",
     "Jongyoon Kim",
@@ -23,33 +23,33 @@
   ],
   "url": "https://arxiv.org/abs/2608.29270",
   "published": "2026-08-29",
-  "mission": null,
-  "status": "no-results",
-  "module": null,
-  "preamble": "import Mathlib",
+  "mission": "arxiv-2608-29270",
+  "status": "derived",
+  "module": "Arxiv260829270",
+  "preamble": "import Mathlib\nimport Lean4All.Definitions.Arxiv260829270\nopen Arxiv260829270",
   "source_kind": "latex",
   "model": "Qwen3.8-Flash-Next",
   "issue": 1,
-  "generated": "2026-10-30T07:17:58+00:00",
+  "generated": "2026-10-30T07:37:00+00:00",
   "conventions": [
-    "Use `Prop` for all theorem statements. The 'intended formal statement' $T$ and 'generated statement' $\\widehat T$ are both of type `Prop`.",
-    "A 'shadow theorem' is represented as a pair `(S : Prop) (hS : S)`, where `S` is the statement and `hS` is the proof.",
-    "A 'complete shadow set' is a `List Prop` (or `Finset Prop`) $\\mathcal{S}$ such that $\\bigwedge_{S \\in \\mathcal{S}} S \\leftrightarrow T$.",
-    "Forward check for a shadow $S$ is the implication $\\widehat T \\to S$. In Lean, this is a term of type `\\widehat T \\to S`.",
-    "Backward check is the implication $(\\bigwedge_{S \\in \\mathcal{S}} S) \\to \\widehat T$. In Lean, this is a term of type `(\\forall S \\in \\mathcal{S}, S) \\to \\widehat T` or similar conjunction encoding.",
-    "The metric `SA-Pass` is a boolean-valued function (or `Nat` 0/1) depending on the existence of proofs for the forward and backward checks.",
-    "Compilation is assumed to be handled by the environment; the metric focuses on the logical implications between `Prop`s.",
-    "Use `List` for shadow sets to maintain order if necessary for indexing, though the logical content is order-independent."
+    "Use `Prop` for all theorem statements (T, S_i, \\hat{T}).",
+    "Use `Finset Prop` or `List Prop` to represent the set of shadow statements \\mathcal{S}.",
+    "Use `Bool` for the binary outcome of SA-Pass (1 for pass, 0 for fail).",
+    "Use `ℝ` for real-valued scores (e.g., the relaxed SA-Pass score).",
+    "Use `Nat` for counts (number of shadows, number of problems).",
+    "Use `Decidable` instances or `Classical` logic for checking implication validity in the metric definition.",
+    "Use `Type` for the universe of mathematical objects if generic formalization is needed, but typically `Prop` suffices for statements.",
+    "Index shadows using `Fin n` or `List` indices."
   ],
   "conventions_ko": [
-    "모든 정리 문장은 `Prop` 타입을 사용한다. '의도된 형식화 문장' $T$와 '생성된 문장' $\\widehat T$ 모두 `Prop` 타입이다.",
-    "'섀도우 정리(shadow theorem)'는 `(S : Prop) (hS : S)` 쌍으로 표현된다. 여기서 `S`는 문장, `hS`는 증명이다.",
-    "'완전한 섀도우 집합(complete shadow set)'은 $\\bigwedge_{S \\in \\mathcal{S}} S \\leftrightarrow T$를 만족하는 `List Prop` (또는 `Finset Prop`) $\\mathcal{S}$이다.",
-    "섀도우 $S$에 대한 전방 검사(forward check)는 함의 $\\widehat T \\to S$이다. Lean에서는 `\\widehat T \\to S` 타입의 항(term)이다.",
-    "후방 검사(backward check)는 함의 $(\\bigwedge_{S \\in \\mathcal{S}} S) \\to \\widehat T$이다. Lean에서는 `(\\forall S \\in \\mathcal{S}, S) \\to \\widehat T` 또는 유사한 논리곱 인코딩 타입의 항이다.",
-    "메트릭 `SA-Pass`는 전방 및 후방 검사의 증명 존재 여부에 따라 결정되는 불리언 값 함수(또는 `Nat` 0/1)이다.",
-    "컴파일 여부는 환경에서 처리된다고 가정하며, 메트릭은 `Prop`들 간의 논리적 함의에 초점을 맞춘다.",
-    "필요한 경우 인덱싱을 위해 섀도우 집합에 `List`를 사용하지만, 논리적 내용은 순서에 무관하다."
+    "모든 정리 명제(T, S_i, \\hat{T})는 `Prop`를 사용한다.",
+    "그림자 명제 집합 \\mathcal{S}는 `Finset Prop` 또는 `List Prop`로 표현한다.",
+    "SA-Pass의 이진 결과(통과/실패)는 `Bool`을 사용한다 (통과 시 true, 실패 시 false).",
+    "실수 값 점수(예: relaxed SA-Pass 점수)에는 `ℝ`를 사용한다.",
+    "개수(그림자 수, 문제 수)에는 `Nat`를 사용한다.",
+    "메트릭 정의에서 함의(validity) 확인을 위해 `Decidable` 인스턴스 또는 `Classical` 논리를 사용한다.",
+    "수학적 객체의 유니버스가 필요하면 `Type`을 사용하지만, 명제에는 일반적으로 `Prop`로 충분하다.",
+    "그림자 인덱싱은 `Fin n` 또는 `List` 인덱스를 사용한다."
   ],
   "notation": [
     {
@@ -57,31 +57,39 @@
       "lean": "T : Prop"
     },
     {
-      "paper": "\\widehat T",
+      "paper": "\\widehat{T}",
       "lean": "T_hat : Prop"
     },
     {
-      "paper": "S_i",
-      "lean": "S : Prop"
+      "paper": "\\mathcal{S} = \\{S_1, \\ldots, S_n\\}",
+      "lean": "S : Finset Prop"
     },
     {
-      "paper": "\\mathcal{S}",
-      "lean": "shadows : List Prop"
+      "paper": "S_i",
+      "lean": "S_i : Prop"
     },
     {
       "paper": "T \\Rightarrow S",
-      "lean": "T \\to S"
+      "lean": "T → S"
     },
     {
-      "paper": "S_1 \\wedge \\cdots \\wedge S_n \\Rightarrow T",
-      "lean": "(\\forall S \\in shadows, S) \\to T"
+      "paper": "S_1 \\wedge \\cdots \\wedge S_n",
+      "lean": "S.prod (fun s => s) (or List.foldr (· ∧ ·) True S.toList)"
     },
     {
-      "paper": "\\text{SA-Pass}(\\widehat T, \\mathcal{S})",
-      "lean": "sa_pass T_hat shadows"
+      "paper": "\\text{SA-Pass}(\\widehat{T}, \\mathcal{S})",
+      "lean": "saPass T_hat S : Bool"
+    },
+    {
+      "paper": "\\text{SA-Pass}_{relaxed}(\\widehat{T}, \\mathcal{S})",
+      "lean": "saPassRelaxed T_hat S : ℝ"
+    },
+    {
+      "paper": "\\mathbf{1}\\{\\phi\\}",
+      "lean": "if h : Valid φ then 1 else 0"
     }
   ],
-  "definitions": "",
+  "definitions": "import Mathlib\n\nset_option autoImplicit false\n\nnamespace Arxiv260829270\n\n/-- A finite set of shadow statements `S` is complete if the conjunction of all shadows is logically equivalent to the intended theorem `T`. Formally: `(∀ S ∈ S, T → S) ∧ ((∀ S ∈ S, S) → T)`. -/\ndef completeShadowSet (T : Prop) (S : Finset Prop) : Prop :=\n  (∀ s ∈ S, T → s) ∧ ((∀ s ∈ S, s) → T)\n\n/-- The condition that a generated statement `T_hat` implies every shadow `S` in the set `S`. Formally: `∀ S ∈ S, T_hat → S`. -/\ndef forwardCheck (T_hat : Prop) (S : Finset Prop) : Prop :=\n  ∀ s ∈ S, T_hat → s\n\n/-- The condition that the conjunction of all shadows in `S` implies the generated statement `T_hat`. Formally: `(∀ S ∈ S, S) → T_hat`. -/\ndef backwardCheck (T_hat : Prop) (S : Finset Prop) : Prop :=\n  (∀ s ∈ S, s) → T_hat\n\nend Arxiv260829270\n",
   "macros": {
     "\\crefrangeconjunction": "--",
     "\\tempfigure": "\\missingfigure{#1}",
@@ -113,8 +121,15 @@
     "\\arraystretch": "1.1",
     "\\delequal": "\\mathrel{\\stackon[1pt]{$=$}{$\\scriptscriptstyle\\Delta$}}"
   },
-  "goal": null,
-  "milestones": [],
+  "goal": "property-1",
+  "milestones": [
+    "property-1",
+    "property-2",
+    "property-3",
+    "property-4",
+    "property-5",
+    "property-6"
+  ],
   "items": [
     {
       "key": "definition-1",
@@ -124,6 +139,8 @@
       "name": "Full autoformalization task",
       "section": "\\ourmetric: Semantic Alignment Pass",
       "tex": "Given an informal theorem statement and its proof, the full autoformalization\ntask is to generate a formal statement $\\widehat T$ together with a\nmachine-checkable proof of $\\widehat T$.\nLet $T$ denote the intended formal statement.\nThe semantic alignment objective is\n$\\widehat T \\Leftrightarrow T$.",
+      "derived": null,
+      "basis": null,
       "uses": [],
       "title_en": null,
       "title_ko": null,
@@ -141,6 +158,8 @@
       "name": "Shadow theorem",
       "section": "\\ourmetric: Semantic Alignment Pass",
       "tex": "For an intended formal statement $T$, a shadow theorem consists of an auxiliary\nformal statement $S$ and a machine-checkable proof of $S$.\n\n\nIts forward checker theorem states that $T$ implies $S$:\n\\[\nT \\Rightarrow S.\n\\]",
+      "derived": null,
+      "basis": null,
       "uses": [],
       "title_en": null,
       "title_ko": null,
@@ -158,6 +177,8 @@
       "name": "Complete shadow set",
       "section": "\\ourmetric: Semantic Alignment Pass",
       "tex": "Let $T$ be the intended formal statement, and let\n$\\mathcal{S}=\\{S_1,\\ldots,S_n\\}$ be a finite set of shadow statements.\nThe set $\\mathcal{S}$ is \\emph{complete} if the shadows jointly characterize\n$T$, i.e., the backward checker theorem states\n\\[\nS_1 \\wedge \\cdots \\wedge S_n \\Rightarrow T.\n\\]\nTogether with the forward checker theorems $T \\Rightarrow S_i$, this gives\n$S_1 \\wedge \\cdots \\wedge S_n \\Leftrightarrow T$.",
+      "derived": null,
+      "basis": null,
       "uses": [],
       "title_en": null,
       "title_ko": null,
@@ -175,6 +196,8 @@
       "name": "Bundled conclusions",
       "section": "\\ourmetric: Semantic Alignment Pass",
       "tex": "Suppose $A,B_1,\\ldots,B_n$ are predicates and the intended formal statement has\nthe form\n\\[\nA \\Rightarrow B_1 \\wedge \\cdots \\wedge B_n.\n\\]\nFor each $i$, define a shadow theorem\n\\[\nS_i : A \\Rightarrow B_i.\n\\]\nThen $\\mathcal{S}$ is complete, because the individual components can be\nassembled back into the bundled conclusion.\n\n\\Cref{app:complete-shadow-bundled,app:complete-shadow-equality} show the corresponding Lean checkers.",
+      "derived": null,
+      "basis": null,
       "uses": [],
       "title_en": null,
       "title_ko": null,
@@ -192,6 +215,8 @@
       "name": "Passing condition",
       "section": "\\ourmetric: Semantic Alignment Pass",
       "tex": "For a problem whose intended formal statement is $T$, a generated formal theorem\nwith statement $\\widehat T$ passes if and only if its declaration and proof type-check\nin Lean and it passes the forward checks\n\\[\n\\widehat T \\Rightarrow S_1,\\quad\n\\widehat T \\Rightarrow S_2,\\quad \\ldots,\\quad\n\\widehat T \\Rightarrow S_n\n\\]\nand the backward check\n\\[\nS_1 \\wedge \\cdots \\wedge S_n \\Rightarrow \\widehat T,\n\\]\nwhere $\\mathcal{S}=\\{S_1,\\ldots,S_n\\}$ is a complete shadow set for $T$.",
+      "derived": null,
+      "basis": null,
       "uses": [],
       "title_en": null,
       "title_ko": null,
@@ -209,6 +234,8 @@
       "name": "\\ourmetric",
       "section": "\\ourmetric: Semantic Alignment Pass",
       "tex": "For a generated formal theorem with statement $\\widehat T$ and a complete shadow\nset $\\mathcal{S}=\\{S_1,\\ldots,S_n\\}$, define\n\\[\n\\text{\\ourmetric}(\\widehat T,\\mathcal{S}) =\n\\begin{cases}\n1,\n& \\begin{array}{l}\n\\text{if } \\widehat T \\text{ compiles, } \\\\\n\\widehat T \\Rightarrow S_i \\text{ for all } i, \\\\\n\\text{and } \\bigwedge_{i=1}^n S_i \\Rightarrow \\widehat T;\n\\end{array}\\\\\n0, & \\text{otherwise.}\n\\end{cases}\n\\]",
+      "derived": null,
+      "basis": null,
       "uses": [],
       "title_en": null,
       "title_ko": null,
@@ -226,6 +253,8 @@
       "name": "\\ourrelaxed",
       "section": "\\ourmetric: Semantic Alignment Pass",
       "tex": "Let $\\widehat T$ be the statement of a generated formal theorem, and let\n$\\mathcal{S}=\\{S_1,\\ldots,S_n\\}$ be a complete shadow set.\nIf the generated theorem does not type-check in Lean, set\n$\\text{\\ourrelaxed}(\\widehat T,\\mathcal{S}){=}0$.\n\n\n\nOtherwise, its \\ourrelaxed score is\n\\begin{multline}\n\\text{\\ourrelaxed}(\\widehat T,\\mathcal{S}) := \n\\frac{1}{2}\\cdot\n\\underbracket[0.5pt][2pt]{\n\\frac{|\\{i : \\widehat T \\Rightarrow S_i\\}|}{|\\mathcal{S}|}}_{\\text{forward checks}} \\\\\n+\n\\frac{1}{2}\\cdot\n\\underbracket[0.5pt][2pt]{\n\\mathbf{1}\\{\\bigwedge_{i=1}^n S_i \\Rightarrow \\widehat T\\}}_{\\text{backward check}}. \\nonumber\n\\end{multline}\nHere $\\mathbf{1}\\{\\phi\\}$ equals $1$ if the corresponding checker theorem\ntype-checks in Lean, and $0$ otherwise.",
+      "derived": null,
+      "basis": null,
       "uses": [],
       "title_en": null,
       "title_ko": null,
@@ -234,6 +263,120 @@
       "lean": null,
       "theorem": null,
       "note": null
+    },
+    {
+      "key": "property-1",
+      "kind": "property",
+      "display": "Property 1",
+      "number": "1",
+      "name": "",
+      "section": "Derived from the definitions",
+      "tex": "If a generated statement $\\widehat T$ passes the SA-Pass metric (i.e., $\\text{SA-Pass}(\\widehat T, \\mathcal{S}) = 1$) with respect to a complete shadow set $\\mathcal{S}$ for the intended theorem $T$, then $\\widehat T$ is logically equivalent to $T$ ($\\widehat T \\Leftrightarrow T$).\n\n(Basis: Definition 4 states that passing requires forward checks ($\\widehat T \\Rightarrow S_i$ for all $i$) and a backward check ($\\bigwedge S_i \\Rightarrow \\widehat T$). Definition 3 states that for a complete shadow set, $\\bigwedge S_i \\Leftrightarrow T$. Combining these: $\\widehat T \\Rightarrow S_i$ implies $\\widehat T \\Rightarrow \\bigwedge S_i$, and since $\\bigwedge S_i \\Leftrightarrow T$, we have $\\widehat T \\Rightarrow T$. Conversely, $\\bigwedge S_i \\Rightarrow \\widehat T$ and $T \\Rightarrow \\bigwedge S_i$ (from completeness) imply $T \\Rightarrow \\widehat T$. Thus $\\widehat T \\Leftrightarrow T$.)",
+      "derived": true,
+      "basis": "Definition 4 states that passing requires forward checks ($\\widehat T \\Rightarrow S_i$ for all $i$) and a backward check ($\\bigwedge S_i \\Rightarrow \\widehat T$). Definition 3 states that for a complete shadow set, $\\bigwedge S_i \\Leftrightarrow T$. Combining these: $\\widehat T \\Rightarrow S_i$ implies $\\widehat T \\Rightarrow \\bigwedge S_i$, and since $\\bigwedge S_i \\Leftrightarrow T$, we have $\\widehat T \\Rightarrow T$. Conversely, $\\bigwedge S_i \\Rightarrow \\widehat T$ and $T \\Rightarrow \\bigwedge S_i$ (from completeness) imply $T \\Rightarrow \\widehat T$. Thus $\\widehat T \\Leftrightarrow T$.",
+      "uses": [],
+      "title_en": "SA-Pass with Complete Shadow Set Implies Logical Equivalence",
+      "title_ko": "완전한 그림자 집합에 대한 SA-Pass 통과가 논리적 동치를 함의함",
+      "statement_en": "Let $T$ be the intended theorem and $\\widehat{T}$ be a generated statement. Let $\\mathcal{S}$ be a finite set of shadow statements. If $\\mathcal{S}$ is a complete shadow set for $T$ (meaning $\\bigwedge_{S \\in \\mathcal{S}} S \\Leftrightarrow T$) and $\\widehat{T}$ passes the SA-Pass metric with respect to $\\mathcal{S}$ (meaning $\\widehat{T} \\Rightarrow S$ for all $S \\in \\mathcal{S}$ and $\\bigwedge_{S \\in \\mathcal{S}} S \\Rightarrow \\widehat{T}$), then $\\widehat{T}$ is logically equivalent to $T$ ($\\widehat{T} \\Leftrightarrow T$).",
+      "statement_ko": "$T$를 의도된 정리, $\\widehat{T}$를 생성된 명제라고 하자. $\\mathcal{S}$를 그림자 명제들의 유한 집합이라고 하자. 만약 $\\mathcal{S}$가 $T$에 대한 완전한 그림자 집합(즉, $\\bigwedge_{S \\in \\mathcal{S}} S \\Leftrightarrow T$)이고, $\\widehat{T}$가 $\\mathcal{S}$에 대해 SA-Pass 지표(즉, 모든 $S \\in \\mathcal{S}$에 대해 $\\widehat{T} \\Rightarrow S$이며 $\\bigwedge_{S \\in \\mathcal{S}} S \\Rightarrow \\widehat{T}$)를 통과한다면, $\\widehat{T}$는 $T$와 논리적으로 동치($\\widehat{T} \\Leftrightarrow T$)이다.",
+      "lean": "(T T_hat : Prop) (S : Finset Prop) (h_complete : completeShadowSet T S) (h_forward : forwardCheck T_hat S) (h_backward : backwardCheck T_hat S) : T_hat ↔ T",
+      "theorem": "T0011",
+      "note": "The property is derived directly from the definitions of `completeShadowSet`, `forwardCheck`, and `backwardCheck`. The hypothesis `h_complete` provides `(∀ s ∈ S, T → s) ∧ ((∀ s ∈ S, s) → T)`. `h_forward` provides `∀ s ∈ S, T_hat → s`. `h_backward` provides `(∀ s ∈ S, s) → T_hat`. The proof involves combining these implications to show `T_hat → T` and `T → T_hat`."
+    },
+    {
+      "key": "property-2",
+      "kind": "property",
+      "display": "Property 2",
+      "number": "2",
+      "name": "",
+      "section": "Derived from the definitions",
+      "tex": "If a generated statement $\\widehat T$ is logically equivalent to the intended theorem $T$ ($\\widehat T \\Leftrightarrow T$) and $\\mathcal{S}$ is a complete shadow set for $T$, then $\\widehat T$ passes the SA-Pass metric (assuming $\\widehat T$ compiles).\n\n(Basis: Definition 3 defines completeness as $T \\Rightarrow S_i$ and $\\bigwedge S_i \\Rightarrow T$. If $\\widehat T \\Leftrightarrow T$, then $\\widehat T \\Rightarrow T \\Rightarrow S_i$ (forward check holds) and $\\bigwedge S_i \\Rightarrow T \\Leftrightarrow \\widehat T$ (backward check holds). Definition 4 states that passing is defined by these checks plus compilation.)",
+      "derived": true,
+      "basis": "Definition 3 defines completeness as $T \\Rightarrow S_i$ and $\\bigwedge S_i \\Rightarrow T$. If $\\widehat T \\Leftrightarrow T$, then $\\widehat T \\Rightarrow T \\Rightarrow S_i$ (forward check holds) and $\\bigwedge S_i \\Rightarrow T \\Leftrightarrow \\widehat T$ (backward check holds). Definition 4 states that passing is defined by these checks plus compilation.",
+      "uses": [],
+      "title_en": "Logical Equivalence Implies SA-Pass",
+      "title_ko": "논리적 동치는 SA-Pass 통과를 함의함",
+      "statement_en": "Let $T$ be the intended theorem, $\\widehat{T}$ be a generated statement, and $\\mathcal{S}$ be a set of shadow statements. If $\\widehat{T}$ is logically equivalent to $T$ (i.e., $\\widehat{T} \\leftrightarrow T$) and $\\mathcal{S}$ is a complete shadow set for $T$, then $\\widehat{T}$ passes the SA-Pass metric. Specifically, the forward check holds ($\\forall S \\in \\mathcal{S}, \\widehat{T} \\to S$) and the backward check holds ($(\\forall S \\in \\mathcal{S}, S) \\to \\widehat{T}$).",
+      "statement_ko": "$T$를 의도된 정리, $\\widehat{T}$를 생성된 명제, $\\mathcal{S}$를 그림자 명제들의 집합이라고 하자. 만약 $\\widehat{T}$가 $T$와 논리적으로 동치라면 (즉, $\\widehat{T} \\leftrightarrow T$) 그리고 $\\mathcal{S}$가 $T$에 대한 완전한 그림자 집합이라면, $\\widehat{T}$는 SA-Pass 지표를 통과한다. 구체적으로, 전방 검사($\\forall S \\in \\mathcal{S}, \\widehat{T} \\to S$)와 후방 검사($(\\forall S \\in \\mathcal{S}, S) \\to \\widehat{T}$)가 모두 성립한다.",
+      "lean": "(T T_hat : Prop) (S : Finset Prop) (h_equiv : T_hat ↔ T) (h_complete : completeShadowSet T S) : forwardCheck T_hat S ∧ backwardCheck T_hat S",
+      "theorem": "T0012",
+      "note": "The paper defines SA-Pass as the conjunction of forwardCheck, backwardCheck, and compilation. Since compilation is a syntactic property not formalized in the shared definitions, the theorem states the logical core: that equivalence and completeness imply both the forward and backward checks."
+    },
+    {
+      "key": "property-3",
+      "kind": "property",
+      "display": "Property 3",
+      "number": "3",
+      "name": "",
+      "section": "Derived from the definitions",
+      "tex": "Let $\\mathcal{S}_1$ and $\\mathcal{S}_2$ be two shadow sets such that $\\mathcal{S}_1 \\subseteq \\mathcal{S}_2$. If a generated statement $\\widehat T$ passes the forward checks for $\\mathcal{S}_2$ (i.e., $\\forall s \\in \\mathcal{S}_2, \\widehat T \\Rightarrow s$), then it also passes the forward checks for $\\mathcal{S}_1$.\n\n(Basis: Definition of `forwardCheck` in Lean: `∀ s ∈ S, T_hat → s`. This is a universal quantification over the set. If the property holds for all elements in a superset, it necessarily holds for all elements in a subset. This is a basic logical property of universal quantification over sets.)",
+      "derived": true,
+      "basis": "Definition of `forwardCheck` in Lean: `∀ s ∈ S, T_hat → s`. This is a universal quantification over the set. If the property holds for all elements in a superset, it necessarily holds for all elements in a subset. This is a basic logical property of universal quantification over sets.",
+      "uses": [],
+      "title_en": "Monotonicity of Forward Check",
+      "title_ko": "순방향 검사(Foward Check)의 단조성",
+      "statement_en": "Let $\\mathcal{S}_1$ and $\\mathcal{S}_2$ be two shadow sets such that $\\mathcal{S}_1 \\subseteq \\mathcal{S}_2$. If a generated statement $\\widehat{T}$ passes the forward checks for $\\mathcal{S}_2$ (i.e., $\\forall s \\in \\mathcal{S}_2, \\widehat{T} \\Rightarrow s$), then it also passes the forward checks for $\\mathcal{S}_1$.",
+      "statement_ko": "$\\mathcal{S}_1 \\subseteq \\mathcal{S}_2$인 두 그림자 집합 $\\mathcal{S}_1$과 $\\mathcal{S}_2$가 있다고 하자. 생성된 명제 $\\widehat{T}$가 $\\mathcal{S}_2$에 대한 순방향 검사를 통과하면(즉, $\\forall s \\in \\mathcal{S}_2, \\widehat{T} \\Rightarrow s$), $\\mathcal{S}_1$에 대한 순방향 검사도 통과한다.",
+      "lean": "(T_hat : Prop) (S₁ S₂ : Finset Prop) (h_sub : S₁ ⊆ S₂) (h_fwd : forwardCheck T_hat S₂) : forwardCheck T_hat S₁",
+      "theorem": "T0013",
+      "note": "The property follows directly from the definition of `forwardCheck` and the subset relation. If `T_hat` implies every element in `S₂`, and `S₁` is a subset of `S₂`, then `T_hat` implies every element in `S₁`."
+    },
+    {
+      "key": "property-4",
+      "kind": "property",
+      "display": "Property 4",
+      "number": "4",
+      "name": "",
+      "section": "Derived from the definitions",
+      "tex": "For a generated statement $\\widehat T$ that compiles, $\\text{SA-Pass}(\\widehat T, \\mathcal{S}) = 1$ if and only if $\\text{Relaxed}(\\widehat T, \\mathcal{S}) = 1$.\n\n(Basis: Definition 5 defines SA-Pass as 1 iff all forward checks pass AND the backward check passes. Definition 6 defines Relaxed score as $0.5 \\times (\\text{fraction of forward checks passed}) + 0.5 \\times (\\text{backward check passed})$. The maximum value of the fraction is 1 (all forward checks pass) and the indicator is 1 (backward check passes). Thus, the sum is 1 iff both components are maximal, which corresponds exactly to the condition for SA-Pass = 1.)",
+      "derived": true,
+      "basis": "Definition 5 defines SA-Pass as 1 iff all forward checks pass AND the backward check passes. Definition 6 defines Relaxed score as $0.5 \\times (\\text{fraction of forward checks passed}) + 0.5 \\times (\\text{backward check passed})$. The maximum value of the fraction is 1 (all forward checks pass) and the indicator is 1 (backward check passes). Thus, the sum is 1 iff both components are maximal, which corresponds exactly to the condition for SA-Pass = 1.",
+      "uses": [],
+      "title_en": "Equivalence of SA-Pass and Relaxed Score",
+      "title_ko": "SA-Pass와 Relaxed 점수의 동치성",
+      "statement_en": "For a generated statement $\\widehat T$ and a set of shadow statements $\\mathcal{S}$, the binary SA-Pass outcome is 1 (true) if and only if the relaxed SA-Pass score is 1.",
+      "statement_ko": "생성된 명제 $\\widehat T$와 그림자 명제 집합 $\\mathcal{S}$에 대해, 이진 SA-Pass 결과가 1(true)인 것은 relaxed SA-Pass 점수가 1인 것과 동치이다.",
+      "lean": "(T_hat : Prop) (S : Finset Prop) : saPass T_hat S = true ↔ saPassRelaxed T_hat S = 1",
+      "theorem": null,
+      "note": "The identifiers `saPass` and `saPassRelaxed` are assumed to be defined in the shared namespace `Arxiv260829270` as per the problem description's notation section, even though they were not explicitly provided in the 'Shared definitions' code block. The statement captures the logical equivalence between the binary pass condition and the maximum relaxed score. Rejected: Unknown identifier `saPass`\n\nNote: It is not possible to treat `saPass` as an implicitly bound variable here because the `autoImplicit` option is set to `false`."
+    },
+    {
+      "key": "property-5",
+      "kind": "property",
+      "display": "Property 5",
+      "number": "5",
+      "name": "",
+      "section": "Derived from the definitions",
+      "tex": "The empty set $\\emptyset$ is a complete shadow set for the intended theorem $T$ if and only if $T$ is logically true ($T \\Leftrightarrow \\top$).\n\n(Basis: Definition 3 (and Lean `completeShadowSet`) defines completeness as $(\\forall s \\in S, T \\to s) \\land ((\\forall s \\in S, s) \\to T)$. For $S = \\emptyset$, the first conjunct $\\forall s \\in \\emptyset, T \\to s$ is vacuously true. The second conjunct $(\\forall s \\in \\emptyset, s) \\to T$ simplifies to $\\top \\to T$, which is equivalent to $T$. Thus, completeness holds iff $T$ is true.)",
+      "derived": true,
+      "basis": "Definition 3 (and Lean `completeShadowSet`) defines completeness as $(\\forall s \\in S, T \\to s) \\land ((\\forall s \\in S, s) \\to T)$. For $S = \\emptyset$, the first conjunct $\\forall s \\in \\emptyset, T \\to s$ is vacuously true. The second conjunct $(\\forall s \\in \\emptyset, s) \\to T$ simplifies to $\\top \\to T$, which is equivalent to $T$. Thus, completeness holds iff $T$ is true.",
+      "uses": [],
+      "title_en": "Completeness of the Empty Shadow Set",
+      "title_ko": "빈 그림자 집합의 완전성",
+      "statement_en": "The empty set $\\emptyset$ is a complete shadow set for the intended theorem $T$ if and only if $T$ is logically true ($T \\Leftrightarrow \\top$).",
+      "statement_ko": "빈 집합 $\\emptyset$가 의도된 정리 $T$에 대한 완전한 그림자 집합일 필요충분조건은 $T$가 논리적으로 참인 것($T \\Leftrightarrow \\top$)이다.",
+      "lean": "(T : Prop) : completeShadowSet T ∅ ↔ T",
+      "theorem": "T0014",
+      "note": "The definition `completeShadowSet` uses `Finset Prop`. The empty set is represented as `∅`. The equivalence holds because the forward direction `∀ s ∈ ∅, T → s` is vacuously true, and the backward direction `(∀ s ∈ ∅, s) → T` simplifies to `True → T`, which is equivalent to `T`."
+    },
+    {
+      "key": "property-6",
+      "kind": "property",
+      "display": "Property 6",
+      "number": "6",
+      "name": "",
+      "section": "Derived from the definitions",
+      "tex": "If a shadow statement $S$ is logically true ($S \\Leftrightarrow \\top$), then any generated statement $\\widehat T$ passes the forward check for $S$ (i.e., $\\widehat T \\Rightarrow S$ holds).\n\n(Basis: Definition of `forwardCheck` requires $\\widehat T \\Rightarrow S$. In classical logic, any proposition implies a tautology ($\\top$). Therefore, if $S$ is a tautology, the implication holds regardless of $\\widehat T$.)",
+      "derived": true,
+      "basis": "Definition of `forwardCheck` requires $\\widehat T \\Rightarrow S$. In classical logic, any proposition implies a tautology ($\\top$). Therefore, if $S$ is a tautology, the implication holds regardless of $\\widehat T$.",
+      "uses": [],
+      "title_en": "Forward Check Passes for Tautological Shadows",
+      "title_ko": "항진 명제 그림자에 대한 전방 검사 통과",
+      "statement_en": "Let $\\widehat{T}$ be a generated statement and $S$ be a shadow statement. If $S$ is logically true (i.e., $S \\Leftrightarrow \\top$), then $\\widehat{T}$ passes the forward check for $S$ (i.e., $\\widehat{T} \\Rightarrow S$).",
+      "statement_ko": "생성된 명제 $\\widehat{T}$와 그림자 명제 $S$가 주어졌을 때, $S$가 논리적으로 참이면(즉, $S \\Leftrightarrow \\top$), $\\widehat{T}$는 $S$에 대한 전방 검사를 통과합니다(즉, $\\widehat{T} \\Rightarrow S$가 성립합니다).",
+      "lean": "(T_hat : Prop) (S : Prop) (hS : S ↔ True) : T_hat → S",
+      "theorem": "T0015",
+      "note": "The property is stated for a single shadow $S$ as implied by the text 'for $S$'. The shared definition `forwardCheck` operates on a `Finset Prop`, but the logical core of the property concerns the implication $\\widehat{T} \\Rightarrow S$ for a specific $S$. The hypothesis $S \\Leftrightarrow \\top$ is formalized as `S ↔ True`."
     }
   ]
 }
