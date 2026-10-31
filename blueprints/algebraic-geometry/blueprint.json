@@ -1,0 +1,217 @@
+{
+  "id": "algebraic-geometry",
+  "arxiv": null,
+  "label": "J.S. Milne, Algebraic Geometry, pp. 12-15",
+  "title": "Algebraic Geometry",
+  "title_ko": "가환대수 기초",
+  "authors": [],
+  "abstract": "",
+  "categories": [],
+  "url": "https://github.com/dichro67s/lean4all/issues/6",
+  "published": "",
+  "mission": "algebraic-geometry",
+  "status": "active",
+  "module": null,
+  "preamble": "import Mathlib",
+  "source_kind": "file-pdf",
+  "model": "Qwen3.8-Flash-Next",
+  "issue": 6,
+  "generated": "2026-10-31T22:33:20+00:00",
+  "conventions": [
+    "Rings are represented by `CommRing R` (commutative rings with 1).",
+    "Ideals are represented by `Ideal R`.",
+    "Prime ideals are represented by `Ideal.IsPrime` predicates or `PrimeSpectrum R`.",
+    "Local rings are represented by `LocalRing R`.",
+    "Noetherian rings are represented by `IsNoetherian R`.",
+    "Modules are represented by `Module R M`.",
+    "Finitely generated modules are represented by `Module.Finite R M`.",
+    "The residue field of a local ring `R` is `R ⧸ R.maximalIdeal`.",
+    "The cotangent space is `R.maximalIdeal ⧸ R.maximalIdeal ^ 2`.",
+    "Dimension is represented by `KrullDim R` (from Mathlib's `RingTheory.KrullDimension`)."
+  ],
+  "conventions_ko": [
+    "환은 `CommRing R` (1을 포함하는 가환환)로 표현한다.",
+    "아이디얼은 `Ideal R`로 표현한다.",
+    "소 아이디얼은 `Ideal.IsPrime` 술어 또는 `PrimeSpectrum R`로 표현한다.",
+    "국소환은 `LocalRing R`로 표현한다.",
+    "뇌터 환은 `IsNoetherian R`로 표현한다.",
+    "가군은 `Module R M`으로 표현한다.",
+    "유한 생성 가군은 `Module.Finite R M`으로 표현한다.",
+    "국소환 `R`의 잉여체는 `R ⧸ R.maximalIdeal`이다.",
+    "여접선 공간(cotangent space)은 `R.maximalIdeal ⧸ R.maximalIdeal ^ 2`이다.",
+    "차원은 `KrullDim R` (Mathlib의 `RingTheory.KrullDimension`에서)로 표현한다."
+  ],
+  "notation": [
+    {
+      "paper": "A",
+      "lean": "R : Type* [CommRing R]"
+    },
+    {
+      "paper": "𝔞, 𝔟",
+      "lean": "I J : Ideal R"
+    },
+    {
+      "paper": "𝔭",
+      "lean": "P : Ideal R [P.IsPrime]"
+    },
+    {
+      "paper": "𝔪",
+      "lean": "R.maximalIdeal"
+    },
+    {
+      "paper": "A/𝔞",
+      "lean": "R ⧸ I"
+    },
+    {
+      "paper": "ht(𝔭)",
+      "lean": "KrullDim (R ⧸ P)"
+    },
+    {
+      "paper": "dim(A)",
+      "lean": "KrullDim R"
+    },
+    {
+      "paper": "M",
+      "lean": "M : Type* [AddCommGroup M] [Module R M]"
+    },
+    {
+      "paper": "𝔪M",
+      "lean": "R.maximalIdeal • M"
+    },
+    {
+      "paper": "𝔪/𝔪²",
+      "lean": "R.maximalIdeal ⧸ R.maximalIdeal ^ 2"
+    },
+    {
+      "paper": "k",
+      "lean": "R ⧸ R.maximalIdeal"
+    }
+  ],
+  "definitions": "",
+  "macros": {},
+  "goal": null,
+  "milestones": [
+    "theorem-1.1",
+    "proposition-1.2",
+    "proposition-1.3",
+    "corollary-1.4"
+  ],
+  "items": [
+    {
+      "key": "theorem-1.1",
+      "kind": "theorem",
+      "display": "Theorem 1.1",
+      "number": "1.1",
+      "name": "Chinese Remainder Theorem",
+      "section": "",
+      "tex": "Let $\\mathfrak{a}_1, \\dots, \\mathfrak{a}_n$ be ideals in a ring $A$. If $\\mathfrak{a}_i$ is coprime to $\\mathfrak{a}_j$ whenever $i \\neq j$, then the canonical map\n$$ A \\to A/\\mathfrak{a}_1 \\times \\dots \\times A/\\mathfrak{a}_n $$\nis surjective, with kernel $\\prod \\mathfrak{a}_i = \\bigcap \\mathfrak{a}_i$.",
+      "derived": null,
+      "basis": null,
+      "uses": [],
+      "title_en": "Chinese Remainder Theorem",
+      "title_ko": "중국 나머지 정리",
+      "statement_en": "Let $A$ be a commutative ring and $\\mathfrak{a}_1, \\dots, \\mathfrak{a}_n$ be ideals in $A$. If $\\mathfrak{a}_i + \\mathfrak{a}_j = A$ for all $i \\neq j$, then the canonical map $A \\to \\prod_{i=1}^n A/\\mathfrak{a}_i$ is surjective, and its kernel is $\\bigcap_{i=1}^n \\mathfrak{a}_i$.",
+      "statement_ko": "$A$를 가환환, $\\mathfrak{a}_1, \\dots, \\mathfrak{a}_n$을 $A$의 이념이라고 하자. 모든 $i \\neq j$에 대해 $\\mathfrak{a}_i + \\mathfrak{a}_j = A$라면, 표준 사상 $A \\to \\prod_{i=1}^n A/\\mathfrak{a}_i$는 전단사이며, 그 핵은 $\\bigcap_{i=1}^n \\mathfrak{a}_i$이다.",
+      "lean": "(R : Type*) [CommRing R] (n : ℕ) (a : Fin n → Ideal R) (h : ∀ i j : Fin n, i ≠ j → a i + a j = ⊤) : Function.Surjective (fun x : R => fun i => Quotient.mk (a i).toSetoid x) ∧ (fun x : R => fun i => Quotient.mk (a i).toSetoid x) ⁻¹' ({0} : Set (Fin n → R ⧸ a i)) = ⨅ i, a i",
+      "theorem": null,
+      "note": "The previous attempt failed because `Quotient.mk` expects a `Setoid`, not an `Ideal`. In Mathlib, `Ideal R` has a coercion to `Setoid R` via `Ideal.toSetoid`, but explicit access via `.toSetoid` is often required or safer for type inference in this context. The kernel condition is expressed as the preimage of the zero element in the product ring being equal to the infimum (intersection) of the ideals. Rejected: Invalid field `toSetoid`: The environment does not contain `Submodule.toSetoid`, so it is not possible to project the field `toSetoid` from an expression\n  a i\nof type `Submodule R R`"
+    },
+    {
+      "key": "proposition-1.2",
+      "kind": "proposition",
+      "display": "Proposition 1.2",
+      "number": "1.2",
+      "name": "",
+      "section": "",
+      "tex": "The following three conditions on a ring $A$ are equivalent:\n(a) every ideal in $A$ is finitely generated;\n(b) every ascending chain of ideals $\\mathfrak{a}_1 \\subset \\mathfrak{a}_2 \\subset \\dots$ eventually becomes constant, i.e., $\\mathfrak{a}_m = \\mathfrak{a}_{m+1} = \\dots$ for some $m$;\n(c) every nonempty set of ideals in $A$ has a maximal element.",
+      "derived": null,
+      "basis": null,
+      "uses": [],
+      "title_en": "Equivalence of Noetherian Conditions",
+      "title_ko": "뇌터 환의 동치 조건",
+      "statement_en": "The following three conditions on a commutative ring $A$ are equivalent: (a) every ideal in $A$ is finitely generated; (b) every ascending chain of ideals $\\mathfrak{a}_1 \\subseteq \\mathfrak{a}_2 \\subseteq \\dots$ eventually becomes constant; (c) every nonempty set of ideals in $A$ has a maximal element.",
+      "statement_ko": "가환환 $A$에 대해 다음 세 조건은 동치이다: (a) $A$의 모든 아이디얼은 유한 생성이다; (b) $A$의 모든 상승 아이디얼 연쇄 $\\mathfrak{a}_1 \\subseteq \\mathfrak{a}_2 \\subseteq \\dots$는 결국 일정해진다; (c) $A$의 모든 공집합이 아닌 아이디얼의 집합은 극대원을 가진다.",
+      "lean": "(R : Type*) [CommRing R] : (∀ I : Ideal R, Module.Finite R I) ↔ (∀ a : ℕ → Ideal R, Monotone a → ∃ m, ∀ n, m ≤ n → a m = a n) ∧ (∀ S : Set (Ideal R), S.Nonempty → ∃ M ∈ S, ∀ I ∈ S, M ≤ I → I = M)",
+      "theorem": null,
+      "note": "The previous rejection was incorrect. In Lean's `Ideal` lattice, the order `≤` corresponds to subset inclusion ($\\subseteq$). A maximal element $M$ in a set $S$ is defined as an element such that no other element in $S$ strictly contains it. This is formally expressed as: for all $I \\in S$, if $M \\le I$ (i.e., $M \\subseteq I$), then $I = M$. The previous statement correctly used `M ≤ I → I = M`, which captures the maximality condition. The condition `I ≤ M → I = M` would define a minimal element. Thus, the original formalization was correct and faithful to the mathematical statement. Rejected: It compiles, but it does not say what the paper says: The Lean statement uses 'minimal element' (M ≤ I → I = M) for condition (2), whereas the human description specifies 'maximal element'. In the context of ideals ordered by inclusion, the Ascending Chain Condition (ACC) is equivalent to the existe"
+    },
+    {
+      "key": "proposition-1.3",
+      "kind": "proposition",
+      "display": "Proposition 1.3",
+      "number": "1.3",
+      "name": "Nakayama's Lemma",
+      "section": "",
+      "tex": "Let $A$ be a local ring with maximal ideal $\\mathfrak{m}$, and let $M$ be a finitely generated $A$-module.\n(a) If $M = \\mathfrak{m}M$, then $M = 0$.\n(b) If $N$ is a submodule of $M$ such that $M = N + \\mathfrak{m}M$, then $M = N$.",
+      "derived": null,
+      "basis": null,
+      "uses": [],
+      "title_en": "Nakayama's Lemma",
+      "title_ko": "나카야마의 보조정리",
+      "statement_en": "Let $A$ be a local ring with maximal ideal $\\mathfrak{m}$, and let $M$ be a finitely generated $A$-module.\n(a) If $M = \\mathfrak{m}M$, then $M = 0$.\n(b) If $N$ is a submodule of $M$ such that $M = N + \\mathfrak{m}M$, then $M = N$.",
+      "statement_ko": "$A$를 극대 아이디얼 $\\mathfrak{m}$을 가진 국소환이라 하고, $M$을 유한 생성 $A$-가군이라 하자.\n(a) $M = \\mathfrak{m}M$이면 $M = 0$이다.\n(b) $N$이 $M$의 부분가군이고 $M = N + \\mathfrak{m}M$이면 $M = N$이다.",
+      "lean": "(R : Type*) [CommRing R] [IsLocalRing R] (M : Type*) [AddCommGroup M] [Module R M] [Module.Finite R M] : (R.maximalIdeal • M = ⊤ → M = ⊥) ∧ (∀ N : Submodule R M, N ⊔ (R.maximalIdeal • M) = ⊤ → N = ⊤)",
+      "theorem": null,
+      "note": "The previous error was due to using `R.maximalIdeal` where `R` is a type variable, not a term. In Mathlib, for a local ring `R`, the maximal ideal is accessed via the instance `IsLocalRing R` as `IsLocalRing.maximalIdeal R` or simply `R.maximalIdeal` if the namespace is opened correctly, but strictly speaking, `R` is a type. The correct Mathlib notation for the maximal ideal of a local ring `R` is `IsLocalRing.maximalIdeal R` or often just `R.maximalIdeal` works if `R` is inferred as a term in a context where `LocalRing` is a structure, but here `R` is a type. Actually, `IsLocalRing` is a class. The maximal ideal is `IsLocalRing.maximalIdeal R`. However, standard Mathlib usage often allows `R.maximalIdeal` if `R` is a term. Since `R` is a type variable, we must use `IsLocalRing.maximalIdeal R`. Wait, looking at Mathlib docs, `IsLocalRing` has a field `maximalIdeal`. Accessing it on a type `R` requires `IsLocalRing.maximalIdeal R`. Let's check if `R.maximalIdeal` works. It usually doesn't for type variables. I will use `IsLocalRing.maximalIdeal R`. Rejected: Invalid field notation: Field projection operates on types of the form `C ...` where C is a constant. The expression\n  R\nhas type `Type u_1` which does not have the necessary form."
+    },
+    {
+      "key": "corollary-1.4",
+      "kind": "corollary",
+      "display": "Corollary 1.4",
+      "number": "1.4",
+      "name": "",
+      "section": "",
+      "tex": "Elements $a_1, \\dots, a_n$ of $\\mathfrak{m}$ generate $\\mathfrak{m}$ as an ideal if and only if their residues modulo $\\mathfrak{m}^2$ span $\\mathfrak{m}/\\mathfrak{m}^2$ as a vector space over $k$. In particular, the minimum number of generators for the maximal ideal is equal to the dimension of the vector space $\\mathfrak{m}/\\mathfrak{m}^2$.",
+      "derived": null,
+      "basis": null,
+      "uses": [
+        "proposition-1.3"
+      ],
+      "title_en": "Nakayama's Lemma: Generators of Maximal Ideal",
+      "title_ko": "나카야마 보조정리: 극대 아이디얼의 생성원",
+      "statement_en": "Let $R$ be a local ring with maximal ideal $\\mathfrak{m}$ and residue field $k = R/\\mathfrak{m}$. Let $a_1, \\dots, a_n$ be elements of $\\mathfrak{m}$. Then $a_1, \\dots, a_n$ generate $\\mathfrak{m}$ as an ideal if and only if their images in the cotangent space $\\mathfrak{m}/\\mathfrak{m}^2$ span this space as a vector space over $k$.",
+      "statement_ko": "$R$을 극대 아이디얼 $\\mathfrak{m}$과 잉여체 $k = R/\\mathfrak{m}$을 가진 국소환이라고 하자. $a_1, \\dots, a_n$이 $\\mathfrak{m}$의 원소일 때, $a_1, \\dots, a_n$이 아이디얼로서 $\\mathfrak{m}$을 생성할 필요충분조건은, $\\mathfrak{m}/\\mathfrak{m}^2$에서의 상(image)들이 $k$-벡터공간으로서 $\\mathfrak{m}/\\mathfrak{m}^2$을 생성하는 것이다.",
+      "lean": "(R : Type*) [CommRing R] [IsLocalRing R] (n : ℕ) (a : Fin n → R) (ha : ∀ i, a i ∈ R.maximalIdeal) : (Ideal.span (Set.range a) = R.maximalIdeal) ↔ (Submodule.span (R ⧸ R.maximalIdeal) (Set.range (fun i => (Ideal.Quotient.mk (R.maximalIdeal ^ 2) (a i)) : Fin n → R.maximalIdeal ⧸ R.maximalIdeal ^ 2)) = ⊤)",
+      "theorem": null,
+      "note": "The previous error was due to incorrect field notation for the quotient map. `Ideal.Quotient.mk` is the correct function to map an element to its class in the quotient ring/ideal. The codomain of the map `fun i => ...` is explicitly typed as `R.maximalIdeal ⧸ R.maximalIdeal ^ 2` to ensure `Submodule.span` works correctly over the residue field. Rejected: Invalid field notation: Field projection operates on types of the form `C ...` where C is a constant. The expression\n  R\nhas type `Type u_1` which does not have the necessary form."
+    },
+    {
+      "key": "definition-1.5",
+      "kind": "definition",
+      "display": "Definition 1.5",
+      "number": "1.5",
+      "name": "",
+      "section": "",
+      "tex": "Let $A$ be a noetherian ring.\n(a) The height $\\operatorname{ht}(\\mathfrak{p})$ of a prime ideal $\\mathfrak{p}$ in $A$ is the greatest length $d$ of a chain of distinct prime ideals\n$$ \\mathfrak{p} = \\mathfrak{p}_d \\supset \\mathfrak{p}_{d-1} \\supset \\dots \\supset \\mathfrak{p}_0. $$\n(b) The Krull dimension, or simply dimension, $\\dim(A)$, of $A$ is $\\sup\\{\\operatorname{ht}(\\mathfrak{p}) \\mid \\mathfrak{p} \\text{ a prime ideal in } A\\}$.",
+      "derived": null,
+      "basis": null,
+      "uses": [],
+      "title_en": null,
+      "title_ko": null,
+      "statement_en": null,
+      "statement_ko": null,
+      "lean": null,
+      "theorem": null,
+      "note": null
+    },
+    {
+      "key": "definition-1.6",
+      "kind": "definition",
+      "display": "Definition 1.6",
+      "number": "1.6",
+      "name": "",
+      "section": "",
+      "tex": "A regular local ring $A$ is a noetherian local ring whose maximal ideal can be generated by $d$ elements, where $d$ is the Krull dimension of $A$.",
+      "derived": null,
+      "basis": null,
+      "uses": [],
+      "title_en": null,
+      "title_ko": null,
+      "statement_en": null,
+      "statement_ko": null,
+      "lean": null,
+      "theorem": null,
+      "note": null
+    }
+  ]
+}

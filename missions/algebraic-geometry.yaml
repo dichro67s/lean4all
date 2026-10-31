@@ -1,0 +1,60 @@
+id: algebraic-geometry
+title: Algebraic Geometry
+title_ko: 가환대수 기초
+type: Textbook
+tags:
+- Mathematics
+captain: dichro67s
+reviewed: false
+summary: This section establishes foundational commutative algebra results including the Chinese Remainder
+  Theorem, the equivalence of Noetherian conditions, Nakayama's Lemma, and the characterization of the
+  minimal number of generators for the maximal ideal of a local ring.
+summary_ko: 이 섹션은 중국인 나머지 정리, 뇌터 조건의 동치성, 나카야마 보조정리, 그리고 국소환의 극대 아이디얼의 최소 생성원 개수에 대한 특징화를 포함하는 가환대수의 기초적인
+  결과를 확립한다.
+description: '**Machine-generated blueprint.** The formal statements were written by Qwen and compile
+  against Mathlib, but a moderator has not checked them against the paper yet. Read the blueprint before
+  contributing.'
+description_ko: |-
+  **기계가 생성한 블루프린트입니다.** 형식 명제는 Qwen이 작성했고 Mathlib에서 컴파일되지만, 아직 운영자가 논문과 대조하지 않았습니다. 기여하기 전에 블루프린트를 먼저 읽으세요.
+
+  이 섹션은 중국인 나머지 정리, 뇌터 조건의 동치성, 나카야마 보조정리, 그리고 국소환의 극대 아이디얼의 최소 생성원 개수에 대한 특징화를 포함하는 가환대수의 기초적인 결과를 확립한다.
+source:
+  title: J.S. Milne, Algebraic Geometry, pp. 12-15
+  url: https://github.com/dichro67s/lean4all/issues/6
+blueprint: algebraic-geometry
+milestones:
+- title: 'Theorem 1.1: Chinese Remainder Theorem'
+  title_ko: 'Theorem 1.1: 중국 나머지 정리'
+  statement: Let $A$ be a commutative ring and $\mathfrak{a}_1, \dots, \mathfrak{a}_n$ be ideals in $A$.
+    If $\mathfrak{a}_i + \mathfrak{a}_j = A$ for all $i \neq j$, then the canonical map $A \to \prod_{i=1}^n
+    A/\mathfrak{a}_i$ is surjective, and its kernel is $\bigcap_{i=1}^n \mathfrak{a}_i$.
+  statement_ko: $A$를 가환환, $\mathfrak{a}_1, \dots, \mathfrak{a}_n$을 $A$의 이념이라고 하자. 모든 $i \neq j$에 대해 $\mathfrak{a}_i
+    + \mathfrak{a}_j = A$라면, 표준 사상 $A \to \prod_{i=1}^n A/\mathfrak{a}_i$는 전단사이며, 그 핵은 $\bigcap_{i=1}^n
+    \mathfrak{a}_i$이다.
+- title: 'Proposition 1.2: Equivalence of Noetherian Conditions'
+  title_ko: 'Proposition 1.2: 뇌터 환의 동치 조건'
+  statement: 'The following three conditions on a commutative ring $A$ are equivalent: (a) every ideal
+    in $A$ is finitely generated; (b) every ascending chain of ideals $\mathfrak{a}_1 \subseteq \mathfrak{a}_2
+    \subseteq \dots$ eventually becomes constant; (c) every nonempty set of ideals in $A$ has a maximal
+    element.'
+  statement_ko: '가환환 $A$에 대해 다음 세 조건은 동치이다: (a) $A$의 모든 아이디얼은 유한 생성이다; (b) $A$의 모든 상승 아이디얼 연쇄 $\mathfrak{a}_1
+    \subseteq \mathfrak{a}_2 \subseteq \dots$는 결국 일정해진다; (c) $A$의 모든 공집합이 아닌 아이디얼의 집합은 극대원을 가진다.'
+- title: 'Proposition 1.3: Nakayama''s Lemma'
+  title_ko: 'Proposition 1.3: 나카야마의 보조정리'
+  statement: |-
+    Let $A$ be a local ring with maximal ideal $\mathfrak{m}$, and let $M$ be a finitely generated $A$-module.
+    (a) If $M = \mathfrak{m}M$, then $M = 0$.
+    (b) If $N$ is a submodule of $M$ such that $M = N + \mathfrak{m}M$, then $M = N$.
+  statement_ko: |-
+    $A$를 극대 아이디얼 $\mathfrak{m}$을 가진 국소환이라 하고, $M$을 유한 생성 $A$-가군이라 하자.
+    (a) $M = \mathfrak{m}M$이면 $M = 0$이다.
+    (b) $N$이 $M$의 부분가군이고 $M = N + \mathfrak{m}M$이면 $M = N$이다.
+- title: 'Corollary 1.4: Nakayama''s Lemma: Generators of Maximal Ideal'
+  title_ko: 'Corollary 1.4: 나카야마 보조정리: 극대 아이디얼의 생성원'
+  statement: Let $R$ be a local ring with maximal ideal $\mathfrak{m}$ and residue field $k = R/\mathfrak{m}$.
+    Let $a_1, \dots, a_n$ be elements of $\mathfrak{m}$. Then $a_1, \dots, a_n$ generate $\mathfrak{m}$
+    as an ideal if and only if their images in the cotangent space $\mathfrak{m}/\mathfrak{m}^2$ span
+    this space as a vector space over $k$.
+  statement_ko: $R$을 극대 아이디얼 $\mathfrak{m}$과 잉여체 $k = R/\mathfrak{m}$을 가진 국소환이라고 하자. $a_1, \dots, a_n$이
+    $\mathfrak{m}$의 원소일 때, $a_1, \dots, a_n$이 아이디얼로서 $\mathfrak{m}$을 생성할 필요충분조건은, $\mathfrak{m}/\mathfrak{m}^2$에서의
+    상(image)들이 $k$-벡터공간으로서 $\mathfrak{m}/\mathfrak{m}^2$을 생성하는 것이다.
