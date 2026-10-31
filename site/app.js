@@ -910,8 +910,32 @@
     const line = t("agent.general", siteBase());
     const step = (n, extra = "") => `<li><div class="step-num">${n}</div><div class="step-body">
       <h3>${t(`s.st${n}.t`)}</h3><p>${t(`s.st${n}.d`)}</p>${extra}</div></li>`;
-    const what = (open = false) => `<details class="what-agent"${open ? " open" : ""}><summary>${t("s.what.q")}</summary><div>${t("s.what.a")}</div></details>`;
-    const faq = [1, 2, 3, 4, 5].map((n) => `<details class="faq"><summary>${t(`s.q${n}`)}</summary><p>${t(`s.a${n}`)}</p></details>`).join("");
+    const what = `<p class="small"><a href="#" data-jump="install" data-block="start">${t("s.what.link")}</a></p>`;
+    const cmd = (label, c) => `<p class="small muted">${t(label)}</p>${codeBlock(c, false)}`;
+    const opt = (k, body) => `<details class="install-opt"><summary>${t(`in.${k}.t`)}</summary><div>${body}</div></details>`;
+    const istep = (n, body) => `<li><div class="step-num">${n}</div><div class="step-body"><h3>${t(`in.s${n}.t`)}</h3><p>${t(`in.s${n}.d`)}</p>${body}</div></li>`;
+    const install = `
+          <section id="install" class="install">
+            <h2>${t("in.t")}</h2>
+            <p>${t("in.lead")}</p>
+            <div class="card pad why-gh"><h3>${t("in.gh.t")}</h3><p class="small">${t("in.gh.d")}</p></div>
+            <ol class="stepper">
+              ${istep(1, "")}
+              ${istep(2, opt("vs", t("in.vs.d")) +
+                opt("cli", `<p class="small">${t("in.cli.d")}</p>` +
+                  cmd("in.cli.mac", "curl -fsSL https://claude.ai/install.sh | bash") +
+                  cmd("in.cli.win", "irm https://claude.ai/install.ps1 | iex") +
+                  cmd("in.cli.codex", "npm install -g @openai/codex") +
+                  cmd("in.cli.run", "mkdir lean4all-work\ncd lean4all-work\nclaude      # Codex: codex")) +
+                opt("app", t("in.app.d")))}
+              ${istep(3, `<details class="install-opt"><summary>${t("in.s4.t")}</summary><div><p class="small">${t("in.s4.d")}</p>` +
+                cmd("in.os.mac", "brew install git gh") +
+                cmd("in.os.win", "winget install --id Git.Git\nwinget install --id GitHub.cli") +
+                cmd("in.os.linux", "sudo apt install git gh") +
+                codeBlock("gh auth login", false) + `</div></details>`)}
+            </ol>
+          </section>`;
+    const faq = [1, 2, 3, 4, 5, 6].map((n) => `<details class="faq"><summary>${t(`s.q${n}`)}</summary><p>${t(`s.a${n}`)}</p></details>`).join("");
     return `
       <section class="start-hero">
         <div class="label">${t("s.kicker")}</div>
@@ -924,10 +948,11 @@
             <h2>${t("s.need")}</h2>
             <ul class="checklist">${[1, 2, 3, 4].map((n) => `<li>${t(`s.need${n}`)}</li>`).join("")}</ul>
           </div>
+          ${install}
           <h2>${t("s.steps")}</h2>
           <ol class="stepper">
             ${step(1, `<div class="row"><a class="btn btn-sm" href="#/missions">${t("s.st1.a")}</a><a class="btn btn-sm" href="#/library?status=open">${t("s.st1.b")}</a></div>`)}
-            ${step(2, `<div class="inline-line">${codeBlock(line, false)}</div>${what()}`)}
+            ${step(2, `<div class="inline-line">${codeBlock(line, false)}</div>${what}`)}
             ${step(3)}
             ${step(4)}
             ${step(5)}
@@ -940,7 +965,7 @@
             <div class="label">${t("s.line")}</div>
             ${codeBlock(line, false)}
             <p class="small muted">${t("s.lineNote")}</p>
-            ${what()}
+            ${what}
             <p class="small muted">${t("s.byHand")}</p>
           </div>
           <div class="card pad">
@@ -1152,7 +1177,7 @@
     if (j) {
       e.preventDefault();
       const el = document.getElementById(j.dataset.jump);
-      if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1200); }
+      if (el) { el.scrollIntoView({ behavior: "smooth", block: j.dataset.block || "center" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1200); }
       return;
     }
     const b = e.target.closest("[data-copy]");

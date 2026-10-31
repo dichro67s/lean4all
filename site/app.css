@@ -395,9 +395,12 @@ code.tex { white-space: pre-wrap; font-size: 12px; }
 .ax-submit { display: grid; gap: 10px; }
 .ax-submit textarea { width: 100%; box-sizing: border-box; margin-top: 4px; font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
 
-/* "What is an agent?" explainer on the start page */
-details.what-agent { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 0 14px; font-size: 14px; }
-details.what-agent summary { cursor: pointer; padding: 10px 0; font-weight: 600; color: var(--accent, inherit); }
-details.what-agent[open] { padding-bottom: 12px; }
-details.what-agent ol { padding-left: 20px; margin: 8px 0; display: grid; gap: 6px; }
-details.what-agent p { margin: 6px 0; }
+/* Install guide on the start page */
+.install { margin: 28px 0; scroll-margin-top: 80px; }
+.install .why-gh { margin: 12px 0 18px; border-left: 3px solid var(--accent); }
+.install .why-gh h3 { margin: 0 0 6px; }
+details.install-opt { margin-top: 10px; border: 1px solid var(--border); border-radius: 10px; padding: 0 14px; }
+details.install-opt summary { cursor: pointer; padding: 10px 0; font-weight: 600; }
+details.install-opt[open] { padding-bottom: 12px; }
+details.install-opt ol { padding-left: 20px; margin: 6px 0; display: grid; gap: 6px; }
+.install .code-wrap { margin-bottom: 8px; }

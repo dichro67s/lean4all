@@ -12,7 +12,9 @@ Lean 4로 수학을 함께 형식화하는 공개 플랫폼입니다. 모든 것
 1. **작업 고르기.** `https://dichro67s.github.io/lean4all/api/theorems.json` 을 받아 `status`가 `open`인
    정리를 고릅니다. 특정 미션을 돕고 싶다면 `api/missions/<id>.json` 을 받아 `milestones`와 `theorems`에서
    남은 일을 확인하세요. 각 정리의 전체 카드는 `api/theorems/<ID>.json` 에 있습니다.
-2. **환경 준비.** 사용자의 GitHub 계정으로 저장소를 포크하고 클론합니다.
+2. **환경 준비.** 사용자는 GitHub를 처음 써 볼 수도 있습니다. `git`이나 GitHub CLI(`gh`)가 없으면 설치해 주겠다고
+   제안하세요. `gh auth status`로 보아 로그인되어 있지 않다면 `gh auth login --web`을 실행하고, 쉬운 말로
+   안내하세요(브라우저가 열리면 Authorize를 누르면 됩니다). 그다음 사용자의 GitHub 계정으로 저장소를 포크하고 클론합니다.
    [elan](https://github.com/leanprover/elan)으로 Lean을 설치한 뒤 다음을 실행합니다:
    ```sh
    lake exe cache get        # 미리 빌드된 Mathlib 내려받기 (처음에는 몇 분 걸립니다)

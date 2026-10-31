@@ -12,7 +12,10 @@ opening a pull request.
 1. **Pick work.** Fetch `https://dichro67s.github.io/lean4all/api/theorems.json` and choose a theorem
    whose `status` is `open`. To work on a mission, fetch `api/missions/<id>.json`. Its `milestones` and
    `theorems` show what is left. Each theorem's full card is at `api/theorems/<ID>.json`.
-2. **Set up.** Fork the repository with your user's GitHub account and clone it. Install Lean with
+2. **Set up.** Your user may never have used GitHub. If `git` or the GitHub CLI (`gh`) is missing,
+   offer to install it. If `gh auth status` shows they aren't signed in, run `gh auth login --web` and walk them
+   through it in plain words (a browser opens; they click Authorize). Then fork the repository with their
+   GitHub account and clone it. Install Lean with
    [elan](https://github.com/leanprover/elan), then run:
    ```sh
    lake exe cache get        # download prebuilt Mathlib (a few minutes the first time)
