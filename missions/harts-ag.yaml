@@ -1,0 +1,49 @@
+id: harts-ag
+title: hartshorne algebraic geometry
+title_ko: 대수기하학 (Hartshorne)
+type: Textbook
+tags:
+- Mathematics
+captain: dichro67s
+reviewed: false
+summary: This section defines algebraic sets and the Zariski topology on affine space, establishing basic
+  properties of the correspondence between sets of points and ideals of polynomials.
+summary_ko: 이 섹션에서는 아핀 공간에서 대수적 집합과 자리스키 위상을 정의하고, 점의 집합과 다항식 아이디얼 사이의 대응 관계의 기본 성질을 확립한다.
+description: '**Machine-generated blueprint.** The formal statements were written by Qwen and compile
+  against Mathlib, but a moderator has not checked them against the paper yet. Read the blueprint before
+  contributing.'
+description_ko: |-
+  **기계가 생성한 블루프린트입니다.** 형식 명제는 Qwen이 작성했고 Mathlib에서 컴파일되지만, 아직 운영자가 논문과 대조하지 않았습니다. 기여하기 전에 블루프린트를 먼저 읽으세요.
+
+  이 섹션에서는 아핀 공간에서 대수적 집합과 자리스키 위상을 정의하고, 점의 집합과 다항식 아이디얼 사이의 대응 관계의 기본 성질을 확립한다.
+source:
+  title: hartshorne algebraic geometry, pp. 10-20
+  url: https://github.com/dichro67s/lean4all/issues/4
+goal: T0016
+blueprint: harts-ag
+milestones:
+- title: 'Proposition 1.1: Algebraic sets form a topology'
+  title_ko: 'Proposition 1.1: 대수적 집합은 위상을 이룬다'
+  statement: 'Let $k$ be a field and $n$ be a finite type. The collection of algebraic sets in $\mathbf{A}^n_k$
+    satisfies the axioms of closed sets for a topology: the union of two algebraic sets is an algebraic
+    set, the intersection of any family of algebraic sets is an algebraic set, and both the empty set
+    and the whole space are algebraic sets.'
+  statement_ko: '$k$를 체, $n$을 유한 타입이라고 하자. $\mathbf{A}^n_k$의 대수적 집합들의 모임은 위상의 닫힌 집합 공리를 만족한다: 두 대수적 집합의
+    합집합은 대수적 집합이고, 임의의 대수적 집합들의 교집합은 대수적 집합이며, 공집합과 전체 공간 모두 대수적 집합이다.'
+  theorem: T0016
+- title: 'Proposition 1.2: Basic properties of the vanishing set and ideal operators'
+  title_ko: 'Proposition 1.2: 소멸 집합과 아이디얼 연산자의 기본 성질'
+  statement: |-
+    Let $k$ be a field and $n$ be a finite type. Let $A = k[x_1, \dots, x_n]$ be the polynomial ring. For subsets $T_1, T_2 \subseteq A$ and $Y_1, Y_2 \subseteq \mathbf{A}^n$:
+    (a) If $T_1 \subseteq T_2$, then $Z(T_1) \supseteq Z(T_2)$.
+    (b) If $Y_1 \subseteq Y_2$, then $I(Y_1) \supseteq I(Y_2)$.
+    (c) $I(Y_1 \cup Y_2) = I(Y_1) \cap I(Y_2)$.
+    (d) For any ideal $\mathfrak{a} \subseteq A$, $I(Z(\mathfrak{a})) = \sqrt{\mathfrak{a}}$.
+    (e) For any subset $Y \subseteq \mathbf{A}^n$, $Z(I(Y)) = \overline{Y}$.
+  statement_ko: |-
+    $k$를 체, $n$을 유한 타입이라고 하자. $A = k[x_1, \dots, x_n]$을 다항식 환이라고 하자. 부분집합 $T_1, T_2 \subseteq A$와 $Y_1, Y_2 \subseteq \mathbf{A}^n$에 대하여:
+    (a) $T_1 \subseteq T_2$이면 $Z(T_1) \supseteq Z(T_2)$이다.
+    (b) $Y_1 \subseteq Y_2$이면 $I(Y_1) \supseteq I(Y_2)$이다.
+    (c) $I(Y_1 \cup Y_2) = I(Y_1) \cap I(Y_2)$이다.
+    (d) 임의의 아이디얼 $\mathfrak{a} \subseteq A$에 대하여 $I(Z(\mathfrak{a})) = \sqrt{\mathfrak{a}}$이다.
+    (e) 임의의 부분집합 $Y \subseteq \mathbf{A}^n$에 대하여 $Z(I(Y)) = \overline{Y}$이다.

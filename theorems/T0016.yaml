@@ -1,0 +1,24 @@
+id: T0016
+title: Algebraic sets form a topology
+title_ko: 대수적 집합은 위상을 이룬다
+description: |-
+  Let $k$ be a field and $n$ be a finite type. The collection of algebraic sets in $\mathbf{A}^n_k$ satisfies the axioms of closed sets for a topology: the union of two algebraic sets is an algebraic set, the intersection of any family of algebraic sets is an algebraic set, and both the empty set and the whole space are algebraic sets.
+
+  *Proposition 1.1 in hartshorne algebraic geometry, pp. 10-20. Machine-formalized; see the mission blueprint.*
+description_ko: |-
+  $k$를 체, $n$을 유한 타입이라고 하자. $\mathbf{A}^n_k$의 대수적 집합들의 모임은 위상의 닫힌 집합 공리를 만족한다: 두 대수적 집합의 합집합은 대수적 집합이고, 임의의 대수적 집합들의 교집합은 대수적 집합이며, 공집합과 전체 공간 모두 대수적 집합이다.
+
+  *hartshorne algebraic geometry, pp. 10-20의 Proposition 1.1. 기계가 형식화한 명제이며, 미션 블루프린트를 참고하세요.*
+preamble: |-
+  import Mathlib
+  import Lean4All.Definitions.SrcHartsAg
+  open SrcHartsAg
+statement: '(k : Type*) [Field k] (n : Type*) [Fintype n] [DecidableEq n] : (∀ Y₁ Y₂ : Set (n → k), algebraicSet
+  Y₁ → algebraicSet Y₂ → algebraicSet (Y₁ ∪ Y₂)) ∧ (∀ (ι : Type*) (Y : ι → Set (n → k)), (∀ i, algebraicSet
+  (Y i)) → algebraicSet (⋂ i, Y i)) ∧ algebraicSet (∅ : Set (n → k)) ∧ algebraicSet (Set.univ : Set (n
+  → k))'
+tags:
+- Mathematics
+source: hartshorne algebraic geometry, pp. 10-20, Proposition 1.1
+mission: harts-ag
+proposer: dichro67s
