@@ -160,7 +160,8 @@ def build_from_file(iss: dict, links: list[str]) -> tuple[str, str]:
         raise ValueError("A title is required.")
     print(f"issue #{iss['number']}: reading {len(links)} attached file(s)")
     parts = S.collect([S.download(u) for u in links])
-    kind, text = S.read(parts, f.get("pages", ""), log=print)
+    cut = "already cut by the site" in f.get("source file", "").lower()   # the files hold just the chosen pages
+    kind, text = S.read(parts, "" if cut else f.get("pages", ""), log=print)
     if len(re.sub(r"\s", "", text)) < 100:
         raise S.SourceError("No text could be read from the attached file.")
     print(f"  {kind}: {len(text):,} characters")

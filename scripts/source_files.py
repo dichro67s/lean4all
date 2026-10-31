@@ -144,11 +144,11 @@ def collect(files: list[tuple[str, bytes]]) -> list[tuple[str, str, bytes]]:
     if "tex" in kinds:
         return [p for p in parts if p[1] == "tex"]          # LaTeX beats any PDF/scan of the same text
     docs = [p for p in parts if p[1] in ("pdf", "djvu")]
-    if len(docs) > 1:
-        raise SourceError("Please attach one document (PDF or DjVu). Use the page range to choose the part "
-                          "to formalize.")
-    if docs:
-        return docs
+    if len(docs) > 1 and any(k == "djvu" for _, k, _ in docs):
+        raise SourceError("Please attach one DjVu document. Use the page range to choose the part to formalize.")
+    if docs:   # several PDFs: parts of one document (the site splits big ones), read in name order
+        natural = lambda p: [int(x) if x.isdigit() else x.lower() for x in re.split(r"(\d+)", p[0])]  # noqa: E731
+        return sorted(docs, key=natural)
     if len(parts) > MAX_IMAGES:
         raise SourceError(f"Please attach at most {MAX_IMAGES} page images.")
     return parts                                            # page photos, in the order given
@@ -285,7 +285,16 @@ def read(parts: list[tuple[str, str, bytes]], pages: str = "", log=print) -> tup
         if kind == "tex":
             return read_tex(parts, work)
         if kind == "pdf":
-            return read_pdf(parts[0][2], pages, work, log)
+            if len(parts) == 1:
+                return read_pdf(parts[0][2], pages, work, log)
+            names = []
+            for i, (_, _, data) in enumerate(parts):
+                names.append(work / f"part{i:03d}.pdf")
+                names[-1].write_bytes(data)
+            r = subprocess.run(["pdfunite", *map(str, names), str(work / "joined.pdf")], capture_output=True, timeout=300)
+            if r.returncode != 0:
+                raise SourceError("The PDF parts could not be joined (damaged or password-protected).")
+            return read_pdf((work / "joined.pdf").read_bytes(), pages, work, log)
         if kind == "djvu":
             return read_djvu(parts[0][2], pages, work, log)
         texts = []

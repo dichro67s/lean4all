@@ -672,12 +672,73 @@
     return null;
   }
 
-  const SRC_MAX_RAW = 200;          // MB we're willing to read and zip in the browser
-  let srcZip = null;                // {blob, name} when some files must go up as a zip
+  const SRC_MAX_RAW = 200;          // MB we're willing to read in the browser
+  const SRC_MAX_PAGES = 60;         // pages the server reads (scripts/source_files.py)
+  let srcUploads = [];              // files the site made ({blob, name}); attach these instead of the originals
+  let srcCut = "";                  // page range the site already cut the PDF to
+  let srcInput = null, srcRun = 0, srcBusy = false;
 
-  async function checkSourceFiles(input) {
-    const list = [];
-    srcZip = null;
+  // pdf-lib, loaded only when someone picks a PDF.
+  let pdfLibP;
+  const loadPdfLib = () => pdfLibP ||= new Promise((res, rej) => {
+    const el = document.createElement("script");
+    el.src = "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js";
+    el.integrity = "sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI";
+    el.crossOrigin = "anonymous";
+    el.onload = () => res(window.PDFLib);
+    el.onerror = () => { pdfLibP = null; rej(new Error("pdf-lib")); };
+    document.head.appendChild(el);
+  });
+
+  function pageRange(spec, total) {   // '45-80' -> [45, 80]; null if empty; throws a message if wrong
+    spec = (spec || "").trim().replace(/[–~]/g, "-");
+    if (!spec) return null;
+    const m = spec.match(/^(\d+)\s*(?:-\s*(\d+))?$/);
+    if (!m) throw t("p.errPages", SRC_MAX_PAGES);
+    const a = +m[1], b = Math.min(+(m[2] || m[1]), total);
+    if (a < 1 || +(m[2] || m[1]) < a) throw t("p.errPages", SRC_MAX_PAGES);
+    if (a > total) throw t("p.errPagesOut", total);
+    if (b - a + 1 > SRC_MAX_PAGES) throw t("p.errPages", SRC_MAX_PAGES);
+    return [a, b];
+  }
+
+  // Cut the chosen pages out of a PDF; split into parts if one file would be over GitHub's limit.
+  async function cutPdf(file, pagesSpec) {
+    const { PDFDocument } = await loadPdfLib();
+    const src = await PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true });
+    const total = src.getPageCount();
+    let r = pageRange(pagesSpec, total);
+    if (!r) {
+      if (total > SRC_MAX_PAGES) throw t("p.errNeedPages", total, SRC_MAX_PAGES);
+      r = [1, total];
+    }
+    const whole = r[0] === 1 && r[1] === total;
+    if (whole && file.size <= SRC_LIMIT.pdf * 1048576) return { total, range: r, parts: null };   // fine as it is
+    const idx = Array.from({ length: r[1] - r[0] + 1 }, (_, i) => r[0] - 1 + i);
+    const build = async (ix) => {
+      const d = await PDFDocument.create();
+      (await d.copyPages(src, ix)).forEach((pg) => d.addPage(pg));
+      return new Blob([await d.save()], { type: "application/pdf" });
+    };
+    const limit = SRC_LIMIT.pdf * 1048576;
+    let blobs = [await build(idx)];
+    for (let k = Math.ceil(blobs[0].size / (limit * 0.9)); blobs.some((x) => x.size > limit); k++) {
+      if (k > idx.length) throw t("p.errPageBig", SRC_LIMIT.pdf);
+      const per = Math.ceil(idx.length / k), chunks = [];
+      for (let i = 0; i < idx.length; i += per) chunks.push(idx.slice(i, i + per));
+      blobs = await Promise.all(chunks.map(build));
+    }
+    const base = file.name.replace(/\.[^.]+$/, "") + `-p${r[0]}-${r[1]}`;
+    return { total, range: r, parts: blobs.map((blob, i) => ({ blob, name: blobs.length > 1 ? `${base}-part${i + 1}.pdf` : `${base}.pdf` })) };
+  }
+
+  async function checkSourceFiles(input = srcInput) {
+    srcInput = input;
+    if (!input) return;
+    const run = ++srcRun, list = [], uploads = [];
+    srcBusy = true;
+    const pages = document.querySelector("#pform [name=pages]").value;
+    srcCut = "";
     for (const file of input.files) {
       const kind = await sniffFile(file);
       const ext = (file.name.split(".").pop() || "").toLowerCase();
@@ -686,36 +747,56 @@
       else if (!SRC_EXT[kind].includes(ext)) err = t("p.errExt", ext, SRC_LABEL[kind]);
       else if (file.size > SRC_MAX_RAW * 1048576) err = t("p.errSize", SRC_MAX_RAW);
       else if (kind === "zip") err = file.size > SRC_LIMIT.zip * 1048576 ? t("p.errSize", SRC_LIMIT.zip) : "";
-      else zip = NEEDS_ZIP.has(kind) || file.size > SRC_LIMIT[kind] * 1048576;   // GitHub won't take it as is
-      list.push({ file, kind, err, zip });
+      else if (kind !== "pdf") zip = NEEDS_ZIP.has(kind) || file.size > SRC_LIMIT[kind] * 1048576;   // GitHub won't take it as is
+      list.push({ file, kind, err, zip, note: "" });
     }
     if (list.filter((f) => f.kind === "pdf" || f.kind === "djvu").length > 1)
       list.forEach((f) => { if (!f.err && (f.kind === "pdf" || f.kind === "djvu")) f.err = t("p.errOneDoc"); });
-    srcFiles = list;
+    srcFiles = list; srcUploads = [];
     const box = document.getElementById("pfilelist");
     const render = (note = "") => {
+      if (run !== srcRun) return;
       box.innerHTML = list.length ? `<ul class="src-list">${list.map((f) =>
         `<li class="${f.err ? "bad" : "ok"}"><span>${f.err ? "✗" : "✓"}</span> <b>${esc(f.file.name)}</b>
-          <span class="muted">${f.kind ? SRC_LABEL[f.kind] + ", " : ""}${mb(f.file.size)}${f.zip && !f.err ? " → zip" : ""}</span>
+          <span class="muted">${f.kind ? SRC_LABEL[f.kind] + ", " : ""}${mb(f.file.size)}${f.note && !f.err ? " → " + esc(f.note) : ""}</span>
           ${f.err ? `<div class="small">${esc(f.err)}</div>` : ""}</li>`).join("")}</ul>${note}` : "";
     };
-    const toZip = list.filter((f) => f.zip && !f.err);
-    if (!toZip.length) { render(); proposeOutput(); return; }
-    render(`<p class="small muted">${t("p.zipping")}</p>`);
-    const blob = await makeZip(await Promise.all(toZip.map(async (f) => ({ name: f.file.name, data: new Uint8Array(await f.file.arrayBuffer()) }))));
-    if (srcFiles !== list) return;   // another selection started meanwhile
-    if (blob.size > SRC_LIMIT.zip * 1048576) {
-      toZip.forEach((f) => { f.err = t("p.errZipBig", mb(blob.size), SRC_LIMIT.zip); });
-      render(); proposeOutput(); return;
+    render(list.some((f) => !f.err && (f.zip || f.kind === "pdf")) ? `<p class="small muted">${t("p.preparing")}</p>` : "");
+
+    const pdf = list.find((f) => f.kind === "pdf" && !f.err);
+    if (pdf) {
+      try {
+        const out = await cutPdf(pdf.file, pages);
+        if (out.parts) {
+          uploads.push(...out.parts);
+          srcCut = `${out.range[0]}-${out.range[1]}`;
+          pdf.note = t("p.cutTo", out.range[0], out.range[1], out.parts.length);
+        }
+      } catch (e) {
+        if (typeof e === "string") pdf.err = e;   // our own message (page range etc.)
+        else if (pdf.file.size > SRC_LIMIT.pdf * 1048576) pdf.err = t("p.errPdfOpen", SRC_LIMIT.pdf);
+        // else: pdf-lib couldn't open it (encrypted, unusual): send it as it is; the server checks again
+      }
     }
-    const name = (toZip.length === 1 ? toZip[0].file.name.replace(/\.[^.]+$/, "") : "source") + ".zip";
-    srcZip = { blob, name };
-    render(`<p class="small">${t("p.zipNote", esc(name), mb(blob.size))} <button type="button" class="btn btn-sm" id="pzip">${t("p.zipBtn")}</button></p>`);
-    document.getElementById("pzip").addEventListener("click", () => {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob); a.download = name;
+    const toZip = list.filter((f) => f.zip && !f.err);
+    if (toZip.length) {
+      const blob = await makeZip(await Promise.all(toZip.map(async (f) => ({ name: f.file.name, data: new Uint8Array(await f.file.arrayBuffer()) }))));
+      if (blob.size > SRC_LIMIT.zip * 1048576) toZip.forEach((f) => { f.err = t("p.errZipBig", mb(blob.size), SRC_LIMIT.zip); });
+      else {
+        const name = (toZip.length === 1 ? toZip[0].file.name.replace(/\.[^.]+$/, "") : "source") + ".zip";
+        uploads.push({ blob, name });
+        toZip.forEach((f) => { f.note = name; });
+      }
+    }
+    if (run !== srcRun) return;   // a newer selection or page range took over
+    srcUploads = uploads; srcBusy = false;
+    render(uploads.length ? `<div class="src-up"><p class="small">${t("p.upNote")}</p><div class="row">${uploads.map((u, i) =>
+      `<button type="button" class="btn btn-sm" data-up="${i}">⬇ ${esc(u.name)} (${mb(u.blob.size)})</button>`).join("")}</div></div>` : "");
+    box.querySelectorAll("[data-up]").forEach((b) => b.addEventListener("click", () => {
+      const u = uploads[+b.dataset.up], a = document.createElement("a");
+      a.href = URL.createObjectURL(u.blob); a.download = u.name;
       a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    });
+    }));
     proposeOutput();
   }
 
@@ -768,6 +849,7 @@
     if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) { msg.textContent = t("p.errId"); return; }
     if (MI[id]) { msg.textContent = t("p.errTaken"); return; }
     if (srcFiles.some((f) => f.err)) { msg.textContent = t("p.errFile"); return; }
+    if (srcBusy) { msg.textContent = t("p.preparing"); return; }
     if (!(v.title || "").trim() || (!(v.stmt || "").trim() && !srcFiles.length)) { msg.textContent = t("p.errReq"); return; }
     btn.disabled = true;
     try {
@@ -776,8 +858,9 @@
         body: formBody([["Mission ID", id], ["Type", v.type], ["Title", v.title], ["Summary", v.summary], ["Tags", v.tags],
           ["Source title", v.stitle], ["Source URL", v.surl], ["Goal description", v.tdesc],
           ["Goal statement (Lean)", v.stmt.trim() ? "```lean\n" + v.stmt.trim() + "\n```" : ""], ["Pages", v.pages],
-          ["Source file", srcFiles.length ? srcFiles.map((f) => `${f.file.name} (${SRC_LABEL[f.kind]}, ${mb(f.file.size)}${f.zip ? `, in ${srcZip.name}` : ""})`).join("\n")
-            + "\n\n_The file is attached in a comment below._" : ""]]) }) });
+          ["Source file", srcFiles.length ? srcFiles.map((f) => `${f.file.name} (${SRC_LABEL[f.kind]}, ${mb(f.file.size)}${f.note ? ` → ${f.note}` : ""})`).join("\n")
+            + (srcCut ? `\n\nAlready cut by the site to pages ${srcCut}.` : "")
+            + `\n\n_The file${srcUploads.length > 1 ? "s are" : " is"} attached in a comment below${srcUploads.length ? ": " + srcUploads.map((u) => u.name).join(", ") : ""}._` : ""]]) }) });
       msg.innerHTML = srcFiles.length ? t("p.sentFile", iss.number, esc(iss.html_url)) : t("p.sent", iss.number, esc(iss.html_url));
       ghCache = {};
     } catch (err) { msg.textContent = t("err.generic", err.message); btn.disabled = false; }
@@ -1243,7 +1326,10 @@
     if (page === "propose") {
       document.getElementById("pform").addEventListener("input", (e) => { if (e.target.id !== "pfile") proposeOutput(); }); proposeOutput();
       srcFiles = [];
+      srcInput = null;
       document.getElementById("pfile").addEventListener("change", (e) => checkSourceFiles(e.target));
+      let pt;
+      document.querySelector("#pform [name=pages]").addEventListener("input", () => { clearTimeout(pt); pt = setTimeout(() => checkSourceFiles(), 500); });
       document.getElementById("psubmit")?.addEventListener("submit", submitProposal);
     }
   }
