@@ -672,36 +672,54 @@
     return null;
   }
 
+  const SRC_MAX_RAW = 200;          // MB we're willing to read and zip in the browser
+  let srcZip = null;                // {blob, name} when some files must go up as a zip
+
   async function checkSourceFiles(input) {
     const list = [];
+    srcZip = null;
     for (const file of input.files) {
       const kind = await sniffFile(file);
       const ext = (file.name.split(".").pop() || "").toLowerCase();
-      let err = "";
+      let err = "", zip = false;
       if (!kind) err = t("p.errType");
       else if (!SRC_EXT[kind].includes(ext)) err = t("p.errExt", ext, SRC_LABEL[kind]);
-      else if (file.size > SRC_LIMIT[kind] * 1048576) err = t("p.errSize", SRC_LIMIT[kind]);
-      list.push({ file, kind, err });
+      else if (file.size > SRC_MAX_RAW * 1048576) err = t("p.errSize", SRC_MAX_RAW);
+      else if (kind === "zip") err = file.size > SRC_LIMIT.zip * 1048576 ? t("p.errSize", SRC_LIMIT.zip) : "";
+      else zip = NEEDS_ZIP.has(kind) || file.size > SRC_LIMIT[kind] * 1048576;   // GitHub won't take it as is
+      list.push({ file, kind, err, zip });
     }
     if (list.filter((f) => f.kind === "pdf" || f.kind === "djvu").length > 1)
       list.forEach((f) => { if (!f.err && (f.kind === "pdf" || f.kind === "djvu")) f.err = t("p.errOneDoc"); });
     srcFiles = list;
-    const zipNeeded = list.filter((f) => !f.err && NEEDS_ZIP.has(f.kind));
-    document.getElementById("pfilelist").innerHTML = list.length ? `<ul class="src-list">${list.map((f) =>
-      `<li class="${f.err ? "bad" : "ok"}"><span>${f.err ? "✗" : "✓"}</span> <b>${esc(f.file.name)}</b>
-        <span class="muted">${f.kind ? SRC_LABEL[f.kind] + ", " : ""}${mb(f.file.size)}</span>${f.err ? `<div class="small">${esc(f.err)}</div>` : ""}</li>`).join("")}</ul>
-      ${zipNeeded.length ? `<p class="small">${t("p.zipNote")} <button type="button" class="btn btn-sm" id="pzip">${t("p.zipBtn")}</button></p>` : ""}` : "";
-    document.getElementById("pzip")?.addEventListener("click", async () => {
-      const blob = await makeZip(await Promise.all(zipNeeded.map(async (f) => ({ name: f.file.name, data: new Uint8Array(await f.file.arrayBuffer()) }))));
+    const box = document.getElementById("pfilelist");
+    const render = (note = "") => {
+      box.innerHTML = list.length ? `<ul class="src-list">${list.map((f) =>
+        `<li class="${f.err ? "bad" : "ok"}"><span>${f.err ? "✗" : "✓"}</span> <b>${esc(f.file.name)}</b>
+          <span class="muted">${f.kind ? SRC_LABEL[f.kind] + ", " : ""}${mb(f.file.size)}${f.zip && !f.err ? " → zip" : ""}</span>
+          ${f.err ? `<div class="small">${esc(f.err)}</div>` : ""}</li>`).join("")}</ul>${note}` : "";
+    };
+    const toZip = list.filter((f) => f.zip && !f.err);
+    if (!toZip.length) { render(); proposeOutput(); return; }
+    render(`<p class="small muted">${t("p.zipping")}</p>`);
+    const blob = await makeZip(await Promise.all(toZip.map(async (f) => ({ name: f.file.name, data: new Uint8Array(await f.file.arrayBuffer()) }))));
+    if (srcFiles !== list) return;   // another selection started meanwhile
+    if (blob.size > SRC_LIMIT.zip * 1048576) {
+      toZip.forEach((f) => { f.err = t("p.errZipBig", mb(blob.size), SRC_LIMIT.zip); });
+      render(); proposeOutput(); return;
+    }
+    const name = (toZip.length === 1 ? toZip[0].file.name.replace(/\.[^.]+$/, "") : "source") + ".zip";
+    srcZip = { blob, name };
+    render(`<p class="small">${t("p.zipNote", esc(name), mb(blob.size))} <button type="button" class="btn btn-sm" id="pzip">${t("p.zipBtn")}</button></p>`);
+    document.getElementById("pzip").addEventListener("click", () => {
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = (zipNeeded.length === 1 ? zipNeeded[0].file.name.replace(/\.[^.]+$/, "") : "source") + ".zip";
+      a.href = URL.createObjectURL(blob); a.download = name;
       a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     });
     proposeOutput();
   }
 
-  // Minimal zip writer (stored, no compression): enough to wrap .tex/.djvu files for GitHub.
+  // Minimal zip writer: deflate where the browser supports it and it helps, otherwise stored.
   let crcTable;
   function crc32(d) {
     crcTable ||= Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
@@ -709,20 +727,30 @@
     for (let i = 0; i < d.length; i++) c = crcTable[(c ^ d[i]) & 0xff] ^ (c >>> 8);
     return (c ^ 0xffffffff) >>> 0;
   }
-  function makeZip(files) {
+  async function deflate(data) {
+    if (typeof CompressionStream === "undefined") return null;
+    const run = async (fmt) => new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new CompressionStream(fmt))).arrayBuffer());
+    try { return await run("deflate-raw"); } catch {}
+    try { const z = await run("deflate"); return z.subarray(2, z.length - 4); } catch {}   // zlib wrapper around raw deflate
+    return null;
+  }
+  async function makeZip(files) {
     const parts = [], central = [];
     let off = 0;
     for (const f of files) {
       const name = new TextEncoder().encode(f.name), crc = crc32(f.data), n = f.data.length;
-      const hdr = (sig, extra) => { const h = new DataView(new ArrayBuffer(extra)); h.setUint32(0, sig, true); return h; };
+      const packed = await deflate(f.data);
+      const method = packed && packed.length < n ? 8 : 0, body = method ? packed : f.data;
+      const hdr = (sig, len) => { const h = new DataView(new ArrayBuffer(len)); h.setUint32(0, sig, true); return h; };
       const loc = hdr(0x04034b50, 30);
-      loc.setUint16(4, 20, true); loc.setUint16(6, 0x800, true); loc.setUint32(14, crc, true);
-      loc.setUint32(18, n, true); loc.setUint32(22, n, true); loc.setUint16(26, name.length, true);
+      loc.setUint16(4, 20, true); loc.setUint16(6, 0x800, true); loc.setUint16(8, method, true); loc.setUint32(14, crc, true);
+      loc.setUint32(18, body.length, true); loc.setUint32(22, n, true); loc.setUint16(26, name.length, true);
       const cen = hdr(0x02014b50, 46);
-      cen.setUint16(4, 20, true); cen.setUint16(6, 20, true); cen.setUint16(8, 0x800, true); cen.setUint32(16, crc, true);
-      cen.setUint32(20, n, true); cen.setUint32(24, n, true); cen.setUint16(28, name.length, true); cen.setUint32(42, off, true);
-      parts.push(loc.buffer, name, f.data); central.push(cen.buffer, name);
-      off += 30 + name.length + n;
+      cen.setUint16(4, 20, true); cen.setUint16(6, 20, true); cen.setUint16(8, 0x800, true); cen.setUint16(10, method, true);
+      cen.setUint32(16, crc, true); cen.setUint32(20, body.length, true); cen.setUint32(24, n, true);
+      cen.setUint16(28, name.length, true); cen.setUint32(42, off, true);
+      parts.push(loc.buffer, name, body); central.push(cen.buffer, name);
+      off += 30 + name.length + body.length;
     }
     const size = central.reduce((a, b) => a + b.byteLength, 0);
     const end = new DataView(new ArrayBuffer(22));
@@ -748,7 +776,7 @@
         body: formBody([["Mission ID", id], ["Type", v.type], ["Title", v.title], ["Summary", v.summary], ["Tags", v.tags],
           ["Source title", v.stitle], ["Source URL", v.surl], ["Goal description", v.tdesc],
           ["Goal statement (Lean)", v.stmt.trim() ? "```lean\n" + v.stmt.trim() + "\n```" : ""], ["Pages", v.pages],
-          ["Source file", srcFiles.length ? srcFiles.map((f) => `${f.file.name} (${SRC_LABEL[f.kind]}, ${mb(f.file.size)})`).join("\n")
+          ["Source file", srcFiles.length ? srcFiles.map((f) => `${f.file.name} (${SRC_LABEL[f.kind]}, ${mb(f.file.size)}${f.zip ? `, in ${srcZip.name}` : ""})`).join("\n")
             + "\n\n_The file is attached in a comment below._" : ""]]) }) });
       msg.innerHTML = srcFiles.length ? t("p.sentFile", iss.number, esc(iss.html_url)) : t("p.sent", iss.number, esc(iss.html_url));
       ghCache = {};

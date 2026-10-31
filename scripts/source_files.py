@@ -33,7 +33,8 @@ from informalize import MODEL, URL  # noqa: E402
 
 UA = {"User-Agent": "lean4all-sources/1.0 (https://github.com/dichro67s/lean4all)"}
 MAX_FILE = 30 * 1024 * 1024        # GitHub allows 25 MB attachments; leave some room
-MAX_UNZIPPED = 120 * 1024 * 1024
+MAX_UNZIPPED = 250 * 1024 * 1024    # the site zips files too big for GitHub; they may unpack large
+MAX_MEMBER = 200 * 1024 * 1024
 MAX_PAGES = 60                     # pages read from a PDF or DjVu
 MAX_SCAN_PAGES = 30                # pages sent to the vision model
 MAX_IMAGES = 30
@@ -121,8 +122,8 @@ def unpack(name: str, data: bytes) -> list[tuple[str, str, bytes]]:
         raise SourceError(f"`{name}` holds too many or too large files.")
     out = []
     for i in members:
-        if i.file_size > MAX_FILE:
-            raise SourceError(f"`{i.filename}` in `{name}` is larger than {MAX_FILE // 2**20} MB.")
+        if i.file_size > MAX_MEMBER:
+            raise SourceError(f"`{i.filename}` in `{name}` is larger than {MAX_MEMBER // 2**20} MB.")
         b = zf.read(i)
         k = sniff(b)
         if k in KINDS:
