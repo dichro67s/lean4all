@@ -1,0 +1,23 @@
+{
+  "id": "T0016",
+  "hash": "adc64097458b4f85",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-10-31T21:35:44+00:00",
+  "en": "Let $k$ be a field and $n$ a finite type. A subset of the affine space $k^n$ (represented as functions $n \\to k$) is called an algebraic set if it is the vanishing set of some set of polynomials. The theorem states that the collection of algebraic sets in $k^n$ is closed under finite unions and arbitrary intersections, and that both the empty set and the entire space $k^n$ are algebraic sets.",
+  "ko": "$k$를 체, $n$을 유한 타입이라 하자. 아핀 공간 $k^n$ (함수 $n \\to k$로 표현됨)의 부분집합이 어떤 다항식 집합의 소멸 집합(vanishing set)일 때 이를 대수적 집합이라 한다. 이 정리는 $k^n$ 내의 대수적 집합들의 모임이 유한 합집합과 임의의 교집합에 대해 닫혀 있으며, 공집합과 전체 공간 $k^n$ 모두 대수적 집합임을 서술한다.",
+  "caveats_en": [
+    "The type `n` represents the set of variables/indices, and `n → k` represents the affine space $k^n$; `Fintype n` ensures the number of variables is finite.",
+    "`algebraicSet` is defined existentially: $Y$ is algebraic if there exists *some* set of polynomials $T$ such that $Y = Z(T)$.",
+    "The theorem combines four distinct properties into a single conjunction: closure under union, closure under intersection, emptiness, and universality."
+  ],
+  "caveats_ko": [
+    "타입 `n`은 변수의 인덱스 집합을 나타내며, `n → k`는 아핀 공간 $k^n$을 나타낸다. `Fintype n`은 변수의 개수가 유한함을 보장한다.",
+    "`algebraicSet`은 존재적으로 정의된다: $Y$가 대수적 집합이라는 것은 $Y = Z(T)$를 만족하는 어떤 다항식 집합 $T$가 존재함을 의미한다.",
+    "이 정리는 네 가지 성질(합집합에 대한 닫힘, 교집합에 대한 닫힘, 공집합의 대수적 집합임, 전체 공간의 대수적 집합임)을 하나의 논리곱(conjunction)으로 결합하고 있다."
+  ],
+  "audit": {
+    "verdict": "match",
+    "note_en": "The Lean statement correctly formalizes the axioms for closed sets in a topology (finite unions, arbitrary intersections, empty set, and whole space) for algebraic sets, which matches the human description and the faithful reading.",
+    "note_ko": "Lean 문장은 대수 집합이 위상의 닫힌 집합 공리(유한 합집합, 임의 교집합, 공집합, 전체 공간)를 만족함을 올바르게 형식화하여, 인간 설명 및 충실한 해석과 일치합니다."
+  }
+}
