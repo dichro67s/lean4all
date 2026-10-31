@@ -405,3 +405,10 @@ details.install-opt ol { padding-left: 20px; margin: 6px 0; display: grid; gap: 
 .install .code-wrap { margin-bottom: 8px; }
 .line-card .pre-req { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
 .line-card .pre-req .checklist { gap: 6px; margin: 8px 0; }
+
+/* Source files on the propose page */
+.src-box { border: 1px dashed var(--border); border-radius: 10px; padding: 12px 14px; }
+.src-box p { margin: 6px 0 0; }
+.src-list { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
+.src-list li.ok > span:first-child { color: #1a7f37; font-weight: 700; }
+.src-list li.bad > span:first-child, .src-list li.bad .small { color: #c62828; }

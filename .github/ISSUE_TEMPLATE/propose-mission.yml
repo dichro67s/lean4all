@@ -9,6 +9,10 @@ body:
         statement compiles against Mathlib, gives it a theorem number, and publishes the mission
         marked as not yet reviewed, with you as captain. This issue closes itself when that's done.
         A moderator compares the statement with the source afterwards.
+
+        **Have the textbook or paper as a file?** Attach it under *Source file*. The server then
+        reads the chosen pages, extracts the theorems and writes the Lean statements itself, so the
+        goal statement is optional.
   - type: input
     id: mission-id
     attributes:
@@ -57,7 +61,21 @@ body:
     id: goal-statement
     attributes:
       label: Goal statement (Lean)
-      description: "The Lean signature after the theorem name, e.g. `(n : ℕ) (hn : 0 < n) : ∃ p, Nat.Prime p ∧ n < p`"
+      description: "The Lean signature after the theorem name, e.g. `(n : ℕ) (hn : 0 < n) : ∃ p, Nat.Prime p ∧ n < p`. Required unless you attach a source file."
       render: lean
     validations:
-      required: true
+      required: false
+  - type: input
+    id: pages
+    attributes:
+      label: Pages
+      description: With a source file, the pages to formalize (at most 60), e.g. 45-80.
+      placeholder: 45-80
+  - type: textarea
+    id: source-file
+    attributes:
+      label: Source file
+      description: >-
+        Drag the file here. PDF, PNG or JPEG, up to 25 MB (images 10 MB). Put .tex or .djvu
+        files in a .zip first, since GitHub doesn't accept them directly. The file becomes public:
+        only attach files you may share.

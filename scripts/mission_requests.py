@@ -7,6 +7,10 @@ Proposals come from the site's "Launch a mission" page (signed-in visitors) or f
   2. checks the mission id, the fields, and the goal statement against the theorem-card rules,
   3. compiles the statement against Mathlib,
   4. writes missions/<id>.yaml (reviewed: false) and theorems/T####.yaml.
+If the proposal comes with a source file (a textbook or paper attached to the issue), the file's
+type is checked and the arXiv pipeline (scripts/arxiv_blueprint.py) reads it instead: it extracts
+the results, writes shared definitions and statements, and publishes a blueprint and mission.
+The Lean goal statement is then optional. See scripts/source_files.py.
 scripts/informal-bot.sh commits the result with "closes #N", which closes the issue.
 A proposal is tried at most twice. If LEAN4ALL_BOT_TOKEN is set, failures are explained in a
 comment on the issue.
@@ -16,6 +20,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -26,6 +31,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import lean4all as L  # noqa: E402
+import source_files as S  # noqa: E402
 
 REPO = os.environ.get("LEAN4ALL_REPO", "dichro67s/lean4all")
 STATE = Path(os.environ.get("LEAN4ALL_MISSION_STATE", Path.home() / ".local/state/lean4all-missions.json"))
@@ -35,7 +41,7 @@ UA = {"User-Agent": "lean4all-missions/1.0 (https://github.com/dichro67s/lean4al
 TYPES = ["Research Paper", "Textbook", "Open Problem", "Classic"]
 MAX_PER_RUN = 3
 LIMITS = {"title": 200, "summary": 400, "tags": 200, "source title": 300, "source url": 500,
-          "goal description": 4000, "goal statement (lean)": 3000}
+          "goal description": 4000, "goal statement (lean)": 3000, "source file": 4000, "pages": 40}
 
 
 def api(path: str, data: dict | None = None) -> dict | list:
@@ -99,7 +105,7 @@ def build(iss: dict) -> tuple[str, str]:
     mtype = f.get("type") if f.get("type") in TYPES else "Research Paper"
     title, stmt = f.get("title", ""), f.get("goal statement (lean)", "")
     if not title or not stmt:
-        raise ValueError("A title and a goal statement are required.")
+        raise ValueError("A title and a goal statement (or an attached source file) are required.")
     tags = [t.strip() for t in f.get("tags", "").split(",") if t.strip()][:8] or ["Mathematics"]
     desc = f.get("goal description") or title
     tid = next_theorem_id()
@@ -132,6 +138,51 @@ def build(iss: dict) -> tuple[str, str]:
     return mid, tid
 
 
+def module_for(mid: str) -> str:
+    base = "Src" + "".join(w[:1].upper() + w[1:] for w in mid.split("-") if w)
+    return base if not (L.DEFINITIONS / f"{base}.lean").exists() else base + "2"
+
+
+def build_from_file(iss: dict, links: list[str]) -> tuple[str, str]:
+    """Read the attached source and run the blueprint pipeline. Returns (mission id, goal or '')."""
+    import arxiv_blueprint as B
+    f = fields(iss.get("body") or "")
+    for k, n in LIMITS.items():
+        if len(f.get(k, "")) > n:
+            raise ValueError(f"`{k}` is longer than {n} characters.")
+    mid, login = f.get("mission id", "").strip(), iss["user"]["login"]
+    if not L.MISSION_RE.match(mid) or len(mid) > 80:
+        raise ValueError("The mission ID must use lowercase letters, digits and dashes.")
+    if (L.MISSIONS / f"{mid}.yaml").exists() or (B.BLUEPRINTS / mid).exists():
+        raise ValueError(f"A mission called `{mid}` already exists. Please file a new proposal with another ID.")
+    title = f.get("title", "")
+    if not title:
+        raise ValueError("A title is required.")
+    print(f"issue #{iss['number']}: reading {len(links)} attached file(s)")
+    parts = S.collect([S.download(u) for u in links])
+    kind, text = S.read(parts, f.get("pages", ""), log=print)
+    if len(re.sub(r"\s", "", text)) < 100:
+        raise S.SourceError("No text could be read from the attached file.")
+    print(f"  {kind}: {len(text):,} characters")
+    stitle = f.get("source title") or title
+    meta = {"arxiv": None, "title": title, "authors": [], "abstract": f.get("summary", ""), "categories": [],
+            "url": f.get("source url") or iss["html_url"], "published": "", "slug": mid, "module": module_for(mid),
+            "label": stitle + (f", pp. {f['pages']}" if f.get("pages") else ""),
+            "type": f.get("type") if f.get("type") in TYPES else "Textbook",
+            "tags": [t.strip() for t in f.get("tags", "").split(",") if t.strip()][:8]}
+    hint = "\n".join(x for x in (f.get("goal description", ""), f.get("goal statement (lean)", "")) if x)
+    try:
+        B.run_source(meta, kind, text, login, iss["number"], print, hint=hint)
+    except RuntimeError as e:
+        if "no theorem-like" in str(e):
+            raise S.SourceError("No theorems, lemmas or definitions were found in the chosen pages.") from e
+        raise
+    if not (L.MISSIONS / f"{mid}.yaml").exists():
+        shutil.rmtree(B.BLUEPRINTS / mid, ignore_errors=True)
+        raise S.SourceError("Nothing in the chosen pages could be formalized. Try other pages.")
+    return mid, yaml.safe_load((L.MISSIONS / f"{mid}.yaml").read_text()).get("goal") or ""
+
+
 def comment(num: int, text: str) -> None:
     if not TOKEN:
         return
@@ -144,19 +195,45 @@ def comment(num: int, text: str) -> None:
 def main() -> int:
     state = json.loads(STATE.read_text()) if STATE.exists() else {}
     issues = api(f"/repos/{REPO}/issues?state=open&per_page=50")
-    done, lines = [], []
+    done, lines, file_runs = [], [], 0
     for iss in issues:
         if "pull_request" in iss or not iss["title"].lower().startswith("[mission]"):
             continue
         num = iss["number"]
         tries = state.get(str(num), 0)
-        if tries >= 2 or len(done) >= MAX_PER_RUN:
+        if len(done) >= MAX_PER_RUN:
+            continue
+        links = []
+        if fields(iss.get("body") or "").get("source file"):
+            if file_runs >= 1:
+                continue                    # reading a book is slow: one per run
+            links = S.attachment_links(iss, api(f"/repos/{REPO}/issues/{num}/comments?per_page=100"),
+                                       REPO.split("/")[0])
+            if not links:
+                continue                    # the file hasn't been attached yet; check again next run
+            if state.get(f"{num}:links") == links:
+                continue                    # these files were already rejected; wait for new ones
+            if tries >= 99:
+                tries = 0                   # new files after a rejection: try again
+        if tries >= 2:
             continue
         state[str(num)] = tries + 1
         STATE.parent.mkdir(parents=True, exist_ok=True)
         STATE.write_text(json.dumps(state))
         try:
-            mid, tid = build(iss)
+            if links:
+                file_runs += 1
+                mid, tid = build_from_file(iss, links)
+            else:
+                mid, tid = build(iss)
+        except S.SourceError as e:
+            state[str(num)], state[f"{num}:links"] = 99, links
+            STATE.write_text(json.dumps(state))
+            print(f"issue #{num} file rejected: {e}")
+            comment(num, f"Lean4All could not use the attached file.\n\n{e}\n\n"
+                         "Attach a corrected file in a new comment on this issue and it will be tried again. "
+                         "Accepted: PDF, DjVu, LaTeX (.tex), PNG, JPEG, or a .zip of those.")
+            continue
         except ValueError as e:
             state[str(num)] = 99   # the proposal itself is wrong; don't retry
             STATE.write_text(json.dumps(state))
@@ -166,14 +243,17 @@ def main() -> int:
             continue
         except Exception as e:  # noqa: BLE001
             print(f"issue #{num} failed: {e}")
+            if links and tries + 1 >= 2:
+                comment(num, "Lean4All could not turn the attached file into a mission after two tries "
+                             f"({type(e).__name__}). A moderator will take a look.")
             continue
-        print(f"issue #{num}: mission {mid}, goal {tid}")
+        print(f"issue #{num}: mission {mid}, goal {tid or '(blueprint only)'}")
         done.append(num)
         uid = iss["user"].get("id")
         lines.append((mid, tid, num, iss["user"]["login"], uid))
     if lines:
         msg = "Mission proposals: " + ", ".join(m for m, *_ in lines)
-        body = "\n".join(f"{m} (goal {t}), proposed by @{u} (closes #{n})" for m, t, n, u, _ in lines)
+        body = "\n".join(f"{m} (goal {t or 'from the attached source'}), proposed by @{u} (closes #{n})" for m, t, n, u, _ in lines)
         trailers = "\n".join(sorted({f"Co-authored-by: {u} <{i}+{u}@users.noreply.github.com>" for *_, u, i in lines}))
         (L.BUILD / "mission-commit-message.txt").write_text(f"{msg}\n\n{body}\n\n{trailers}\n")
     return 0

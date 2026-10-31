@@ -650,6 +650,87 @@
     } catch (err) { msg.textContent = t("err.generic", err.message); btn.disabled = false; return; }
   }
 
+  // ---------- source files for mission proposals ------------------------------------------
+  // The file itself goes to the GitHub issue (the API can't attach files); here we only check it.
+  // The server checks it again (scripts/source_files.py).
+  const SRC_LIMIT = { pdf: 25, djvu: 25, tex: 25, zip: 25, png: 10, jpeg: 10 };   // MB, GitHub's attachment limits
+  const SRC_LABEL = { pdf: "PDF", djvu: "DjVu", tex: "LaTeX", zip: "ZIP", png: "PNG", jpeg: "JPEG" };
+  const SRC_EXT = { pdf: ["pdf"], djvu: ["djvu", "djv"], tex: ["tex"], zip: ["zip"], png: ["png"], jpeg: ["jpg", "jpeg"] };
+  const NEEDS_ZIP = new Set(["djvu", "tex"]);   // GitHub won't take these as attachments
+  let srcFiles = [];
+  const mb = (n) => n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1048576).toFixed(1)} MB`;
+
+  async function sniffFile(file) {
+    const b = new Uint8Array(await file.slice(0, 65536).arrayBuffer());
+    const head = String.fromCharCode(...b.slice(0, 16));
+    if (head.startsWith("%PDF-")) return "pdf";
+    if (head.startsWith("AT&TFORM") && head.slice(12, 15) === "DJV") return "djvu";
+    if (head.startsWith("\x89PNG\r\n\x1a\n")) return "png";
+    if (head.startsWith("\xff\xd8\xff")) return "jpeg";
+    if (head.startsWith("PK\x03\x04")) return "zip";
+    if (!b.includes(0) && /\\(documentclass|begin\{|section|newtheorem|input\{)/.test(new TextDecoder().decode(b))) return "tex";
+    return null;
+  }
+
+  async function checkSourceFiles(input) {
+    const list = [];
+    for (const file of input.files) {
+      const kind = await sniffFile(file);
+      const ext = (file.name.split(".").pop() || "").toLowerCase();
+      let err = "";
+      if (!kind) err = t("p.errType");
+      else if (!SRC_EXT[kind].includes(ext)) err = t("p.errExt", ext, SRC_LABEL[kind]);
+      else if (file.size > SRC_LIMIT[kind] * 1048576) err = t("p.errSize", SRC_LIMIT[kind]);
+      list.push({ file, kind, err });
+    }
+    if (list.filter((f) => f.kind === "pdf" || f.kind === "djvu").length > 1)
+      list.forEach((f) => { if (!f.err && (f.kind === "pdf" || f.kind === "djvu")) f.err = t("p.errOneDoc"); });
+    srcFiles = list;
+    const zipNeeded = list.filter((f) => !f.err && NEEDS_ZIP.has(f.kind));
+    document.getElementById("pfilelist").innerHTML = list.length ? `<ul class="src-list">${list.map((f) =>
+      `<li class="${f.err ? "bad" : "ok"}"><span>${f.err ? "✗" : "✓"}</span> <b>${esc(f.file.name)}</b>
+        <span class="muted">${f.kind ? SRC_LABEL[f.kind] + ", " : ""}${mb(f.file.size)}</span>${f.err ? `<div class="small">${esc(f.err)}</div>` : ""}</li>`).join("")}</ul>
+      ${zipNeeded.length ? `<p class="small">${t("p.zipNote")} <button type="button" class="btn btn-sm" id="pzip">${t("p.zipBtn")}</button></p>` : ""}` : "";
+    document.getElementById("pzip")?.addEventListener("click", async () => {
+      const blob = await makeZip(await Promise.all(zipNeeded.map(async (f) => ({ name: f.file.name, data: new Uint8Array(await f.file.arrayBuffer()) }))));
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = (zipNeeded.length === 1 ? zipNeeded[0].file.name.replace(/\.[^.]+$/, "") : "source") + ".zip";
+      a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    });
+    proposeOutput();
+  }
+
+  // Minimal zip writer (stored, no compression): enough to wrap .tex/.djvu files for GitHub.
+  let crcTable;
+  function crc32(d) {
+    crcTable ||= Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+    let c = 0xffffffff;
+    for (let i = 0; i < d.length; i++) c = crcTable[(c ^ d[i]) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  }
+  function makeZip(files) {
+    const parts = [], central = [];
+    let off = 0;
+    for (const f of files) {
+      const name = new TextEncoder().encode(f.name), crc = crc32(f.data), n = f.data.length;
+      const hdr = (sig, extra) => { const h = new DataView(new ArrayBuffer(extra)); h.setUint32(0, sig, true); return h; };
+      const loc = hdr(0x04034b50, 30);
+      loc.setUint16(4, 20, true); loc.setUint16(6, 0x800, true); loc.setUint32(14, crc, true);
+      loc.setUint32(18, n, true); loc.setUint32(22, n, true); loc.setUint16(26, name.length, true);
+      const cen = hdr(0x02014b50, 46);
+      cen.setUint16(4, 20, true); cen.setUint16(6, 20, true); cen.setUint16(8, 0x800, true); cen.setUint32(16, crc, true);
+      cen.setUint32(20, n, true); cen.setUint32(24, n, true); cen.setUint16(28, name.length, true); cen.setUint32(42, off, true);
+      parts.push(loc.buffer, name, f.data); central.push(cen.buffer, name);
+      off += 30 + name.length + n;
+    }
+    const size = central.reduce((a, b) => a + b.byteLength, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+    end.setUint32(12, size, true); end.setUint32(16, off, true);
+    return new Blob([...parts, ...central, end.buffer], { type: "application/zip" });
+  }
+
   async function submitProposal(e) {
     e.preventDefault();
     const v = Object.fromEntries(new FormData(document.getElementById("pform")).entries());
@@ -658,15 +739,18 @@
     msg.textContent = "";
     if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) { msg.textContent = t("p.errId"); return; }
     if (MI[id]) { msg.textContent = t("p.errTaken"); return; }
-    if (!(v.title || "").trim() || !(v.stmt || "").trim()) { msg.textContent = t("p.errReq"); return; }
+    if (srcFiles.some((f) => f.err)) { msg.textContent = t("p.errFile"); return; }
+    if (!(v.title || "").trim() || (!(v.stmt || "").trim() && !srcFiles.length)) { msg.textContent = t("p.errReq"); return; }
     btn.disabled = true;
     try {
       const iss = await gh(`/repos/${D.repo}/issues`, { method: "POST", body: JSON.stringify({
         title: `[Mission] ${id}`,
         body: formBody([["Mission ID", id], ["Type", v.type], ["Title", v.title], ["Summary", v.summary], ["Tags", v.tags],
           ["Source title", v.stitle], ["Source URL", v.surl], ["Goal description", v.tdesc],
-          ["Goal statement (Lean)", "```lean\n" + v.stmt.trim() + "\n```"]]) }) });
-      msg.innerHTML = t("p.sent", iss.number, esc(iss.html_url));
+          ["Goal statement (Lean)", v.stmt.trim() ? "```lean\n" + v.stmt.trim() + "\n```" : ""], ["Pages", v.pages],
+          ["Source file", srcFiles.length ? srcFiles.map((f) => `${f.file.name} (${SRC_LABEL[f.kind]}, ${mb(f.file.size)})`).join("\n")
+            + "\n\n_The file is attached in a comment below._" : ""]]) }) });
+      msg.innerHTML = srcFiles.length ? t("p.sentFile", iss.number, esc(iss.html_url)) : t("p.sent", iss.number, esc(iss.html_url));
       ghCache = {};
     } catch (err) { msg.textContent = t("err.generic", err.message); btn.disabled = false; }
   }
@@ -1007,6 +1091,13 @@
         <label>${t("p.user")}<input type="text" name="captain"${ME ? ` value="${esc(ME.login)}" readonly` : ""}></label>
         <label>${t("p.stitle")}<input type="text" name="stitle" placeholder="Author, Title (Year)"></label>
         <label>${t("p.surl")}<input type="text" name="surl" placeholder="https://arxiv.org/abs/…"></label>
+        <div class="full src-box">
+          <label>${t("p.file")}<input type="file" id="pfile" multiple accept=".pdf,.djvu,.djv,.tex,.png,.jpg,.jpeg,.zip"></label>
+          <p class="small muted">${t("p.fileHelp")}</p>
+          <p class="small muted">${t("p.fileRights")}</p>
+          <div id="pfilelist"></div>
+        </div>
+        <label>${t("p.pages")}<input type="text" name="pages" placeholder="45-80"></label>
         <label>${t("p.tid")}<input type="text" name="tid" value="${nextId}"></label>
         <label>${t("p.tdesc")}<input type="text" name="tdesc" placeholder="For every $n$ …"></label>
         <label class="full">${t("p.stmt")}<textarea name="stmt" rows="2" placeholder="(n : ℕ) (hn : 0 < n) : ∃ p, Nat.Prime p ∧ n < p"></textarea></label>
@@ -1029,6 +1120,14 @@
     const mission = `id: ${id}\ntitle: ${q(v.title)}\ntype: ${v.type}\ntags: ${tg}\ncaptain: ${who}\nreviewed: false\nsummary: ${q(v.summary)}\ndescription: |\n  ${v.summary || "Describe the mission."}\nsource:\n  title: ${q(v.stitle)}\n  url: ${q(v.surl)}\ngoal: ${tid}\nmilestones:\n  - title: ${q(v.title || "Main theorem")}\n    statement: ${q(v.tdesc)}\n    theorem: ${tid}\n`;
     const card = `id: ${tid}\ntitle: ${q(v.title)}\ndescription: |\n  ${v.tdesc || "Natural-language statement."}\nstatement: ${q(v.stmt || "(n : ℕ) : n = n")}\ntags: ${tg}\nsource: ${q(v.stitle)}\nmission: ${id}\nproposer: ${who}\n`;
     const nf = (path, val) => ghUrl(`/new/${D.branch}?filename=${enc(path)}&value=${enc(val)}`);
+    if (srcFiles.length && !ME) {
+      const pre = { "mission-id": v.id, type: v.type, title: v.title, summary: v.summary, tags: v.tags, "source-title": v.stitle,
+        "source-url": v.surl, pages: v.pages, "goal-description": v.tdesc, "goal-statement": v.stmt };
+      const qs = Object.entries(pre).filter(([, x]) => x).map(([k, x]) => `${k}=${enc(x)}`).join("&");
+      document.getElementById("pout").innerHTML = `<div class="card pad"><p>${t("p.issueForm")}</p>
+        <a class="btn btn-primary btn-sm" href="${ghUrl(`/issues/new?template=propose-mission.yml&${qs}`)}" target="_blank" rel="noopener">${t("p.issueFormBtn")}</a></div>`;
+      return;
+    }
     document.getElementById("pout").innerHTML = `
       <div class="card pad"><h3>missions/${esc(id)}.yaml</h3>${codeBlock(mission, false)}<p><a class="btn btn-sm" href="${nf(`missions/${id}.yaml`, mission)}">${t("p.create")}</a></p></div>
       <div class="card pad"><h3>theorems/${esc(tid)}.yaml</h3>${codeBlock(card, false)}<p><a class="btn btn-sm" href="${nf(`theorems/${tid}.yaml`, card)}">${t("p.create")}</a></p></div>`;
@@ -1114,7 +1213,9 @@
     }
     if (page === "me") loadMe();
     if (page === "propose") {
-      document.getElementById("pform").addEventListener("input", proposeOutput); proposeOutput();
+      document.getElementById("pform").addEventListener("input", (e) => { if (e.target.id !== "pfile") proposeOutput(); }); proposeOutput();
+      srcFiles = [];
+      document.getElementById("pfile").addEventListener("change", (e) => checkSourceFiles(e.target));
       document.getElementById("psubmit")?.addEventListener("submit", submitProposal);
     }
   }

@@ -118,7 +118,9 @@ def fetch_meta(aid: str) -> dict:
     cats = re.findall(r'<category term="([^"]+)"', entry)
     return {"arxiv": aid, "title": title, "authors": authors, "abstract": get("summary"),
             "categories": cats, "published": get("published")[:10],
-            "url": f"https://arxiv.org/abs/{aid}"}
+            "url": f"https://arxiv.org/abs/{aid}", "slug": slug(aid), "module": module_name(aid),
+            "label": f"arXiv:{aid}", "type": "Research Paper",
+            "tags": [CATEGORY_TAGS[c] for c in cats if c in CATEGORY_TAGS][:3]}
 
 
 def download_source(aid: str, work: Path) -> tuple[str, str]:
@@ -757,7 +759,7 @@ PROPS_SCHEMA = {
 
 def derive_properties(meta: dict, items: list[dict], plan: dict, defs: str, prose: str, log) -> list[dict]:
     paper_defs = "\n\n".join(f"{it['display']}: {it['tex'][:1500]}" for it in items if it["kind"] == "definition")
-    out = safe_chat(PROPS_SYSTEM, f"Paper: {meta['title']}\nAbstract: {meta['abstract']}\n\n"
+    out = safe_chat(PROPS_SYSTEM, f"Paper: {meta['title']}\nAbstract: {meta['abstract'] or '(none)'}\n\n"
                     f"The paper's definitions:\n{paper_defs}\n\nShared Lean definitions:\n```lean\n{defs}\n```\n\n"
                     f"Paper text:\n{prose[:8000]}", PROPS_SCHEMA, 6000, log).get("properties", [])[:8]
     log(f"  no stated theorems: derived {len(out)} properties of the definitions")
@@ -799,8 +801,8 @@ def dump_yaml(path: Path, data: dict) -> None:
 
 def write_outputs(meta: dict, items: list[dict], plan: dict, defs: str, macros_katex: dict,
                   source_kind: str, captain: str, issue: int | None) -> dict:
-    aid, sl, mod = meta["arxiv"], slug(meta["arxiv"]), module_name(meta["arxiv"])
-    tags = [CATEGORY_TAGS[c] for c in meta["categories"] if c in CATEGORY_TAGS][:3] or ["Mathematics"]
+    lab, sl, mod = meta["label"], meta["slug"], meta["module"]
+    tags = meta.get("tags") or ["Mathematics"]
     good = [it for it in items if it.get("compiled")]
     ids = next_ids(len(good))
     for it, tid in zip(good, ids):
@@ -809,21 +811,21 @@ def write_outputs(meta: dict, items: list[dict], plan: dict, defs: str, macros_k
     if defs and any(it["kind"] in FORMAL_KINDS for it in items):
         (L.DEFINITIONS / f"{mod}.lean").write_text(defs_module(mod, defs), encoding="utf-8")
     for it in good:
-        cite = f"{it['display']}{' (' + it['name'] + ')' if it['name'] else ''} in arXiv:{aid}"
+        cite = f"{it['display']}{' (' + it['name'] + ')' if it['name'] else ''} in {lab}"
         if it.get("derived"):
-            note_en = (f"*Derived from the definitions of arXiv:{aid}; not a theorem stated in the paper "
+            note_en = (f"*Derived from the definitions of {lab}; not a theorem stated in the source "
                        f"(basis: {it['basis']}). Machine-formalized; see the mission blueprint.*")
-            note_ko = (f"*arXiv:{aid}의 정의에서 유도한 성질이며, 논문에 명시된 정리가 아닙니다. "
+            note_ko = (f"*{lab}의 정의에서 유도한 성질이며, 원문에 명시된 정리가 아닙니다. "
                        "기계가 형식화한 명제이며, 미션 블루프린트를 참고하세요.*")
         else:
             note_en = f"*{cite}. Machine-formalized; see the mission blueprint.*"
-            note_ko = f"*arXiv:{aid}의 {it['display']}. 기계가 형식화한 명제이며, 미션 블루프린트를 참고하세요.*"
+            note_ko = f"*{lab}의 {it['display']}. 기계가 형식화한 명제이며, 미션 블루프린트를 참고하세요.*"
         dump_yaml(L.THEOREMS / f"{it['theorem']}.yaml", {
             "id": it["theorem"], "title": it["title_en"], "title_ko": it["title_ko"],
             "description": f"{it['statement_en']}\n\n{note_en}",
             "description_ko": f"{it['statement_ko']}\n\n{note_ko}",
             "preamble": preamble, "statement": it["lean"], "tags": tags,
-            "source": f"arXiv:{aid}, {'derived from the definitions' if it.get('derived') else it['display']}",
+            "source": f"{lab}, {'derived from the definitions' if it.get('derived') else it['display']}",
             "mission": sl, "proposer": captain,
         })
     bykey = {it["key"]: it for it in items}
@@ -840,9 +842,9 @@ def write_outputs(meta: dict, items: list[dict], plan: dict, defs: str, macros_k
     authors = ", ".join(meta["authors"][:4]) + (" et al." if len(meta["authors"]) > 4 else "")
     mission = {
         "id": sl, "title": meta["title"], "title_ko": plan.get("title_ko") or meta["title"],
-        "type": "Research Paper", "tags": tags, "captain": captain, "reviewed": False,
+        "type": meta.get("type") or "Research Paper", "tags": tags, "captain": captain, "reviewed": False,
         "summary": plan["summary_en"], "summary_ko": plan["summary_ko"],
-        "description": (f"{meta['abstract']}\n\n" + ("**This paper states no theorems.** This mission formalizes its "
+        "description": ((f"{meta['abstract']}\n\n" if meta['abstract'] else "") + ("**This paper states no theorems.** This mission formalizes its "
                         "definitions and proves properties derived from them; those properties are not claims "
                         "made in the paper.\n\n" if derived_only else "") + "**Machine-generated blueprint.** The formal statements were "
                         "written by Qwen and compile against Mathlib, but a moderator has not checked them "
@@ -852,7 +854,8 @@ def write_outputs(meta: dict, items: list[dict], plan: dict, defs: str, macros_k
                            "**기계가 생성한 블루프린트입니다.** 형식 명제는 Qwen이 작성했고 Mathlib에서 컴파일되지만, "
                            "아직 운영자가 논문과 대조하지 않았습니다. 기여하기 전에 블루프린트를 먼저 읽으세요.\n\n"
                            f"{plan['summary_ko']}"),
-        "source": {"title": f"{authors}, {meta['title']} (arXiv:{aid})", "url": meta["url"]},
+        "source": {"title": f"{authors}, {meta['title']} ({lab})" if meta.get("arxiv") else lab,
+                   "url": meta["url"]},
         "goal": bykey[goal_key]["theorem"] if goal_key else None,
         "blueprint": sl,
         "milestones": [{k2: v for k2, v in {
@@ -868,7 +871,7 @@ def write_outputs(meta: dict, items: list[dict], plan: dict, defs: str, macros_k
         dump_yaml(L.MISSIONS / f"{sl}.yaml", mission)
 
     bp = {
-        "id": sl, "arxiv": aid, "title": meta["title"], "title_ko": plan.get("title_ko"),
+        "id": sl, "arxiv": meta.get("arxiv"), "label": lab, "title": meta["title"], "title_ko": plan.get("title_ko"),
         "authors": meta["authors"], "abstract": meta["abstract"], "categories": meta["categories"],
         "url": meta["url"], "published": meta["published"], "mission": sl if has_results else None,
         "status": ("derived" if derived_only else "active") if has_results else "no-results",
@@ -893,7 +896,8 @@ def blueprint_md(bp: dict) -> str:
     items = bp["items"]
     bykey = {it["key"]: it for it in items}
     lines = [f"# Blueprint: {bp['title']}", "",
-             f"arXiv:{bp['arxiv']} · {', '.join(bp['authors'])} · mission `{bp['mission']}`", "",
+             f"{bp.get('label') or 'arXiv:' + bp['arxiv']}{' · ' + ', '.join(bp['authors']) if bp['authors'] else ''}"
+             f" · mission `{bp['mission']}`", "",
              "> **Agents: read this before working on any theorem in this mission.** Everyone formalizing",
              "> this paper must follow the same conventions and definitions, so their proofs fit together.", "",
              *([("> **This paper states no theorems.** The results below are properties derived from its "
@@ -925,6 +929,9 @@ def blueprint_md(bp: dict) -> str:
         lines.append(f"| {it['display']} {('(' + it['name'] + ')') if it['name'] else ''} | "
                      f"{it.get('theorem') or '—'} | {uses} | {lean.replace('|', '∣')} |")
     lines += ["", f"Generated {bp['generated']} by `scripts/arxiv_blueprint.py` with {bp['model']}.", ""]
+    if bp.get("source_kind", "").startswith("file"):
+        lines[-1:-1] = ["Source: a file attached to the mission proposal"
+                        + (f" (issue #{bp['issue']})" if bp.get("issue") else "") + ".", ""]
     return "\n".join(lines)
 
 
@@ -942,7 +949,17 @@ def run(aid: str, captain: str, issue: int | None = None, log=print) -> dict:
     with tempfile.TemporaryDirectory() as tmp:
         kind, text = download_source(aid, Path(tmp))
     log(f"  source: {kind}, {len(text):,} chars")
-    if kind == "latex":
+    return run_source(meta, kind, text, captain, issue, log)
+
+
+def run_source(meta: dict, kind: str, text: str, captain: str, issue: int | None = None, log=print,
+               hint: str = "") -> dict:
+    """Steps 2-5 for any source. `kind` starts with 'latex' (flattened TeX) or is text from a PDF/scan.
+    `meta` needs title, authors, abstract, categories, url, published, slug, module, label;
+    optional type and tags. `hint`: what the proposer said the goal is."""
+    if (BLUEPRINTS / meta["slug"] / "blueprint.json").exists():
+        raise RuntimeError(f"a blueprint for {meta['slug']} already exists")
+    if kind.endswith("latex"):
         items = extract_items(text)
         macros, macros_katex = parse_macros(text)
     else:
@@ -954,10 +971,12 @@ def run(aid: str, captain: str, issue: int | None = None, log=print) -> dict:
                            for it in items if it["kind"] == "definition")[:20000]
     results = "\n".join(f"- [{it['key']}] {it['display']}{' (' + it['name'] + ')' if it['name'] else ''}: {it['tex'][:300]}"
                         for it in items if it["kind"] in FORMAL_KINDS)[:20000]
-    mod = module_name(aid)
-    prose = paper_prose(text) if kind == "latex" else text
+    mod = meta["module"]
+    prose = paper_prose(text) if kind.endswith("latex") else text
     plan = safe_chat(PLAN_SYSTEM,
-                     f"Paper: {meta['title']}\nAbstract: {meta['abstract']}\n\nLaTeX macros:\n{macros[:3000]}\n\n"
+                     f"Paper: {meta['title']}\nAbstract: {meta['abstract'] or '(none)'}\n\n"
+                     + (f"The proposer says the goal is: {hint[:3000]}\n\n" if hint else "")
+                     + f"LaTeX macros:\n{macros[:3000]}\n\n"
                      f"Definitions in the paper:\n{defs_tex or '(none extracted)'}\n\nResults (keys in brackets):\n{results}"
                      f"\n\nPaper text (beginning):\n{prose[:10000]}",
                      PLAN_SCHEMA, 6000, log, tries=3)
@@ -981,7 +1000,7 @@ def run(aid: str, captain: str, issue: int | None = None, log=print) -> dict:
 
 def publish(meta, items, plan, defs, macros_katex, kind, captain, issue, log) -> dict:
     """Write files, then build them exactly as CI will; remove everything if anything fails."""
-    sl, mod = slug(meta["arxiv"]), module_name(meta["arxiv"])
+    sl, mod = meta["slug"], meta["module"]
     before = {p.name for p in L.THEOREMS.glob("*.yaml")}
     try:
         bp = write_outputs(meta, items, plan, defs, macros_katex, kind, captain, issue)
@@ -1052,7 +1071,7 @@ def main() -> int:
     if a.from_issues:
         done = from_issues(a.repo)
         if done:
-            msg = "Blueprints: " + ", ".join(f"arXiv:{bp['arxiv']}" for _, bp in done)
+            msg = "Blueprints: " + ", ".join(bp["label"] for _, bp in done)
             body = "\n".join(f"{bp['title']} (closes #{n})" for n, bp in done)
             (L.BUILD / "commit-message.txt").write_text(f"{msg}\n\n{body}\n")
         return 0

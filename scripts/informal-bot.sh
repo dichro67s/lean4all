@@ -34,7 +34,7 @@ fi
 rm -f build/mission-commit-message.txt
 python3 -u scripts/mission_requests.py 2>&1 | while IFS= read -r line; do echo "$(date -Is) missions: $line"; done
 if [ -s build/mission-commit-message.txt ]; then
-  git add missions theorems
+  git add missions theorems blueprints definitions
   git commit -q -F build/mission-commit-message.txt && echo "$(date -Is) committed mission proposal(s)"
 fi
 
