@@ -641,7 +641,7 @@
   async function proposalStatus(i) {
     const id = issueField(i.body, "Mission ID") || i.title.replace(/^\[mission\]\s*/i, "").trim();
     if (MI[id] || (i.state === "closed" && i.state_reason === "completed")) return { id, st: "done" };
-    if (i.state === "closed") return { id, st: "closed" };
+    if (i.state === "closed") return { id, st: i.state_reason === "not_planned" ? "rejected" : "closed" };
     const comments = i.comments ? await ghGet(`/repos/${D.repo}/issues/${i.number}/comments?per_page=100`) : [];
     const all = [i.body || "", ...comments.map((c) => c.body || "")].join("\n");
     const bot = [...comments].reverse().find((c) => /^Lean4All (could not|has started)/.test(c.body || ""));
@@ -659,12 +659,16 @@
       const issues = await ghGet(`/repos/${D.repo}/issues?state=all&per_page=40&sort=created&direction=desc`);
       const list = issues.filter((i) => !i.pull_request && /^\[mission\]/i.test(i.title)).slice(0, 8);
       const rows = await Promise.all(list.map(async (i) => ({ i, ...(await proposalStatus(i).catch(() => ({ st: "unknown" }))) })));
-      el.innerHTML = rows.length ? `<ul class="pst-list">${rows.map(({ i, id, st }) => `<li>
+      // The server takes proposals oldest first, one at a time: show each one's place in that queue.
+      const queue = rows.filter((r) => r.st === "queued" || r.st === "working").sort((a, b) => a.i.number - b.i.number);
+      queue.forEach((r, k) => { if (k === 0 && r.st === "queued") r.st = "next"; r.ahead = k; });
+      el.innerHTML = rows.length ? `<ul class="pst-list">${rows.map(({ i, id, st, ahead }) => `<li>
           <div><span class="pst pst-${st}">${t(`p.st.${st}`)}</span>
             <a href="${esc(i.html_url)}" target="_blank" rel="noopener">#${i.number}</a>
             <b>${esc(issueField(i.body, "Title") || id || i.title)}</b>
             <span class="muted small">· @${esc(i.user.login)} · ${ago(i.created_at)}</span></div>
-          <div class="small muted">${st === "done" && id ? `<a href="#/missions/${esc(id)}">${t("p.st.open")}</a>` : t(`p.stHint.${st}`)}</div>
+          <div class="small muted">${st === "done" && id ? `<a href="#/missions/${esc(id)}">${t("p.st.open")}</a>`
+            : t(`p.stHint.${st}`) + (ahead ? " " + t("p.st.ahead", ahead) : "")}</div>
         </li>`).join("")}</ul>` : `<p class="small muted">${t("p.st.none")}</p>`;
     } catch { el.innerHTML = `<p class="small muted">${t("p.st.err")}</p>`; }
   }

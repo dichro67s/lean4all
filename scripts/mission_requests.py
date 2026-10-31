@@ -44,11 +44,11 @@ LIMITS = {"title": 200, "summary": 400, "tags": 200, "source title": 300, "sourc
           "goal description": 4000, "goal statement (lean)": 3000, "source file": 4000, "pages": 40}
 
 
-def api(path: str, data: dict | None = None) -> dict | list:
+def api(path: str, data: dict | None = None, method: str | None = None) -> dict | list:
     headers = dict(UA)
     if TOKEN:
         headers["Authorization"] = f"Bearer {TOKEN}"
-    req = urllib.request.Request(f"https://api.github.com{path}", headers=headers,
+    req = urllib.request.Request(f"https://api.github.com{path}", headers=headers, method=method,
                                  data=json.dumps(data).encode() if data is not None else None)
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.load(r)
@@ -207,9 +207,19 @@ def build_from_source(iss: dict, links: list[str] | None = None) -> tuple[str, s
         if "no theorem-like" in str(e):
             raise S.SourceError("No theorems, lemmas or definitions were found in the chosen pages.") from e
         raise
-    if not (L.MISSIONS / f"{mid}.yaml").exists():
+    made = [p for p in L.THEOREMS.glob("T*.yaml") if (yaml.safe_load(p.read_text()) or {}).get("mission") == mid]
+    if not (L.MISSIONS / f"{mid}.yaml").exists() or not made:
+        # A mission without a single Lean statement isn't a success: publish nothing and say so.
+        n = len(json.loads((B.BLUEPRINTS / mid / "blueprint.json").read_text()).get("items", [])) \
+            if (B.BLUEPRINTS / mid / "blueprint.json").exists() else 0
+        for q in made:
+            q.unlink()
+        (L.MISSIONS / f"{mid}.yaml").unlink(missing_ok=True)
+        (L.DEFINITIONS / f"{meta['module']}.lean").unlink(missing_ok=True)
         shutil.rmtree(B.BLUEPRINTS / mid, ignore_errors=True)
-        raise S.SourceError("Nothing in the chosen pages could be formalized. Try other pages.")
+        raise S.SourceError(f"The server found {n} results in the source but could not write a Lean statement "
+                            "that compiles for any of them, so no mission was published. Try other pages, or "
+                            "add a Lean goal statement yourself.")
     return mid, yaml.safe_load((L.MISSIONS / f"{mid}.yaml").read_text()).get("goal") or ""
 
 
@@ -224,7 +234,7 @@ def comment(num: int, text: str) -> None:
 
 def main() -> int:
     state = json.loads(STATE.read_text()) if STATE.exists() else {}
-    issues = api(f"/repos/{REPO}/issues?state=open&per_page=50")
+    issues = api(f"/repos/{REPO}/issues?state=open&per_page=50&sort=created&direction=asc")   # first come, first served
     done, lines, file_runs = [], [], 0
     for iss in issues:
         if "pull_request" in iss or not iss["title"].lower().startswith("[mission]"):
@@ -296,6 +306,11 @@ def main() -> int:
             print(f"issue #{num} rejected: {str(e).splitlines()[0]}")
             comment(num, f"Lean4All could not publish this proposal.\n\n{e}\n\n"
                          "You can file a corrected proposal from the site or with the issue form.")
+            if TOKEN:   # the proposal itself is wrong: close it, so its status is clear on the site
+                try:
+                    api(f"/repos/{REPO}/issues/{num}", {"state": "closed", "state_reason": "not_planned"}, "PATCH")
+                except Exception as err:  # noqa: BLE001
+                    print(f"could not close #{num}: {err}")
             continue
         except Exception as e:  # noqa: BLE001
             print(f"issue #{num} failed: {e}")

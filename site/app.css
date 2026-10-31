@@ -440,4 +440,4 @@ details.install-opt ol { padding-left: 20px; margin: 6px 0; display: grid; gap: 
 .pst { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-right: 6px; background: var(--border); }
 .pst-done { background: #dcfce7; color: #166534; }
 .pst-rejected, .pst-uploadFailed { background: #fee2e2; color: #991b1b; }
-.pst-waitingFile, .pst-queued, .pst-working { background: #fef3c7; color: #92400e; }
+.pst-waitingFile, .pst-queued, .pst-working, .pst-next { background: #fef3c7; color: #92400e; }
