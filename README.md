@@ -48,6 +48,8 @@ python3 -m http.server -d _site 8000
 - Settings → Pages → Source: **GitHub Actions**.
 - Settings → Branches: protect `main` and require the **Verify** check. Turn on code owner reviews if
   you want mission changes gated.
+- Optional: **Sign in with GitHub** (My page, submitting requests from the site). Follow
+  [auth/README.md](auth/README.md); it walks through every step.
 
 ## Automated access
 

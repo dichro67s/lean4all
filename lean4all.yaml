@@ -4,3 +4,5 @@ tagline: Open, agent-powered formalization of mathematics in Lean 4
 repo: dichro67s/lean4all
 branch: main
 mathlib: v4.35.0
+# Sign in with GitHub: URL of the auth Worker (see auth/README.md). Leave empty to hide sign-in.
+auth:

@@ -420,8 +420,139 @@
           </dl>
           <p class="small muted" style="margin-top:16px">${esc(t(`sth.${th.status}`))}</p>
           <p class="small"><a href="${ghUrl(`/blob/${D.branch}/theorems/${th.id}.yaml`)}">${t("t.card")}</a></p>
+          <p>${watchBtn(th.id)}</p>
         </aside>
       </div>`;
+  }
+
+  // ---------- sign in with GitHub ----------------------------------------------------------
+  // The auth Worker (auth/worker.js) trades GitHub's code for a user token and hands it back in
+  // the URL fragment. The token stays in this browser and is only sent to api.github.com.
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+  let ME = store.get("l4a-auth", null);
+  if (ME && ME.exp && ME.exp < Date.now()) { ME = null; store.set("l4a-auth", null); }
+  let authNote = "";
+
+  function signIn() {
+    if (!D?.auth) return;
+    const a = new Uint8Array(24); crypto.getRandomValues(a);
+    const state = btoa(String.fromCharCode(...a)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    try { sessionStorage.setItem("l4a-auth-state", state); sessionStorage.setItem("l4a-auth-return", location.hash || "#/me"); } catch {}
+    location.href = `${D.auth.replace(/\/$/, "")}/login?return=${enc(siteBase())}&state=${enc(state)}`;
+  }
+  function signOut() {
+    if (ME && D?.auth) fetch(`${D.auth.replace(/\/$/, "")}/revoke`, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: ME.token }) }).catch(() => {});
+    ME = null; store.set("l4a-auth", null); ghCache = {}; paintAuth();
+    if (location.hash.startsWith("#/me")) route(); else location.hash = "#/me";
+  }
+  // Finish sign-in when the Worker sends us back to #/auth?token=…&state=….
+  async function finishSignIn() {
+    if (!location.hash.startsWith("#/auth?")) return;
+    const p = new URLSearchParams(location.hash.slice("#/auth?".length));
+    let want = null, ret = "#/me";
+    try { want = sessionStorage.getItem("l4a-auth-state"); ret = sessionStorage.getItem("l4a-auth-return") || ret;
+          sessionStorage.removeItem("l4a-auth-state"); sessionStorage.removeItem("l4a-auth-return"); } catch {}
+    if (ret.startsWith("#/auth")) ret = "#/me";
+    history.replaceState(null, "", location.pathname + location.search + ret);   // drop the token from the address bar
+    if (!want || p.get("state") !== want) { authNote = t("auth.failed", "state mismatch"); return; }
+    if (p.get("error") || !p.get("token")) { authNote = t("auth.failed", p.get("error") || "no token"); return; }
+    const token = p.get("token"), exp = +p.get("expires_in");
+    try {
+      const r = await fetch("https://api.github.com/user", { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const u = await r.json();
+      ME = { token, login: u.login, avatar: u.avatar_url, exp: exp ? Date.now() + exp * 1000 - 60000 : null };
+      store.set("l4a-auth", ME);
+    } catch (e) { authNote = t("auth.failed", e.message); }
+  }
+  // GitHub API with the visitor's token when signed in (5,000 requests an hour instead of 60).
+  let ghCache = {};
+  async function gh(path, opts = {}) {
+    const headers = { Accept: "application/vnd.github+json", ...(opts.body ? { "Content-Type": "application/json" } : {}) };
+    if (ME) headers.Authorization = `Bearer ${ME.token}`;
+    const r = await fetch(`https://api.github.com${path}`, { ...opts, headers });
+    if (r.status === 401 && ME) { ME = null; store.set("l4a-auth", null); authNote = t("auth.expired"); paintAuth(); }
+    const body = r.status === 204 ? null : await r.json().catch(() => null);
+    if (!r.ok) throw new Error(body?.message || `HTTP ${r.status}`);
+    return body;
+  }
+  const ghGet = (path) => (ghCache[path] ||= gh(path).catch((e) => { delete ghCache[path]; throw e; }));
+  function paintAuth() {
+    const slot = document.getElementById("auth-slot");
+    if (!slot) return;
+    if (!D?.auth) { slot.innerHTML = ""; return; }
+    slot.innerHTML = ME
+      ? `<a class="me-link" href="#/me" title="${esc(t("auth.me"))} (@${esc(ME.login)})"><img class="avatar" alt="@${esc(ME.login)}" src="${esc(ME.avatar)}&s=56"></a>`
+      : `<button class="btn btn-sm" data-signin>${t("auth.signin")}</button>`;
+  }
+
+  // Watch list: theorem id -> status when last seen. Kept in this browser.
+  const watched = () => store.get("l4a-watch", {});
+  function toggleWatch(id) {
+    const w = watched();
+    if (w[id]) delete w[id]; else w[id] = TH[id]?.status || "open";
+    store.set("l4a-watch", w);
+  }
+  const watchBtn = (id) => `<button class="btn btn-sm watch-btn${watched()[id] ? " on" : ""}" data-watch="${esc(id)}">${t(watched()[id] ? "w.watching" : "w.watch")}</button>`;
+
+  function viewMe() {
+    const w = watched();
+    const wl = Object.keys(w).filter((id) => TH[id]).map((id) => {
+      const now = TH[id].status, changed = now !== w[id];
+      return `<li><span>${thmLink(id)} ${esc(loc(TH[id], "title"))}</span><span class="spacer"></span>
+        ${changed ? `<span class="small changed">${esc(t("me.changed", stName(w[id]), stName(now)))}</span>
+          <button class="btn btn-sm" data-seen="${esc(id)}">${t("me.seen")}</button>` : ""}${chip(now)}</li>`;
+    }).join("");
+    const watchCard = `<div class="card pad"><h2>${t("me.watch")}</h2>${wl ? `<ul class="me-list">${wl}</ul>` : `<p class="muted small">${t("me.watchNone")}</p>`}</div>`;
+    const note = authNote ? `<p class="callout small">${esc(authNote)}</p>` : "";
+    authNote = "";
+    if (!ME) {
+      return `<h1>${t("me.title")}</h1>${note}
+        <div class="card pad callout-card"><h3>${t("me.signinT")}</h3><p class="muted">${t("me.signinD")}</p>
+          ${D.auth ? `<button class="btn btn-primary" data-signin>${t("auth.signinLong")}</button>` : ""}</div>
+        <div style="margin-top:18px">${watchCard}</div>`;
+    }
+    const me = ME.login, same = (u) => (u || "").toLowerCase() === me.toLowerCase();
+    const ms = D.missions.filter((m) => same(m.captain));
+    const proposed = D.theorems.filter((x) => same(x.proposer));
+    const proofs = D.theorems.filter((x) => x.proof && same(x.proof.author));
+    const thList = (xs) => xs.length ? `<ul class="me-list">${xs.map((x) => `<li><span>${thmLink(x.id)} ${esc(loc(x, "title"))}</span><span class="spacer"></span>${chip(x.status)}</li>`).join("")}</ul>` : `<p class="muted small">${t("me.none")}</p>`;
+    const known = D.users.some((u) => same(u.name));
+    return `
+      <div class="me-head">
+        <img class="avatar avatar-lg" alt="" src="${esc(ME.avatar)}&s=128">
+        <div><h1 style="margin:0">@${esc(me)}</h1><p class="muted" style="margin:4px 0 0">${t("me.lead")}</p></div>
+        <span class="spacer"></span>
+        ${known ? `<a class="btn btn-sm" href="#/contributors/${enc(me)}">${t("me.profile")}</a>` : ""}
+        <button class="btn btn-sm" data-signout>${t("auth.signout")}</button>
+      </div>${note}
+      <div class="me-grid">
+        <div class="card pad"><h2>${t("me.prs")}</h2><div id="me-prs" class="small muted">${t("loading")}</div></div>
+        <div class="card pad"><h2>${t("me.requests")}</h2><div id="me-issues" class="small muted">${t("loading")}</div></div>
+        ${watchCard}
+        <div class="card pad"><h2>${t("me.missions")}</h2>${ms.length ? `<ul class="me-list">${ms.map((m) => `<li><a href="#/missions/${m.id}">${esc(loc(m, "title"))}</a><span class="spacer"></span>${m.completed ? chip(m.goal_status) : ""}</li>`).join("")}</ul>` : `<p class="muted small">${t("me.none")}</p>`}</div>
+        <div class="card pad"><h2>${t("me.proofs")}</h2>${thList(proofs)}</div>
+        <div class="card pad"><h2>${t("me.thms")}</h2>${thList(proposed)}</div>
+      </div>`;
+  }
+  async function loadMe() {
+    if (!ME) return;
+    const list = async (elId, q, state) => {
+      const el = document.getElementById(elId);
+      try {
+        const r = await ghGet(`/search/issues?q=${enc(`repo:${D.repo} author:${ME.login} ${q}`)}&sort=updated&per_page=20`);
+        if (!document.getElementById(elId)) return;
+        el.innerHTML = r.items.length ? `<ul class="feed">${r.items.map((i) => `<li><span class="when">${ago(i.updated_at)}</span>
+          <span><a href="${esc(i.html_url)}" target="_blank" rel="noopener">#${i.number}</a> ${esc(i.title)}
+          <span class="gh-state gh-${state(i)}">${t(`gh.${state(i)}`)}</span></span></li>`).join("")}</ul>` : t("me.none");
+      } catch (e) { if (el) el.textContent = t("err.generic", e.message); }
+    };
+    list("me-prs", "is:pr", (i) => i.state === "open" ? "open" : i.pull_request?.merged_at ? "merged" : "closed");
+    list("me-issues", "is:issue", (i) => i.state === "open" ? "issueOpen" : "issueClosed");
   }
 
   // ---------- arXiv blueprints -------------------------------------------------------------
@@ -447,8 +578,14 @@
       const issue = ghUrl(`/issues/new?template=formalize-arxiv.yml&title=${enc("[arXiv] " + aid)}&arxiv=${enc(aid)}`);
       result = `<div class="card pad callout-card"><h3>${t("ax.request.t", aid)}</h3>
         <p class="muted">${t("ax.request.d")}</p>
-        <div class="row"><a class="btn btn-primary" href="${issue}" target="_blank" rel="noopener">${t("ax.request.b")}</a>
-          <a class="btn" href="https://arxiv.org/abs/${esc(aid)}" target="_blank" rel="noopener">arXiv:${esc(aid)}</a></div></div>`;
+        ${ME ? `<form id="axsubmit" data-aid="${esc(aid)}" class="ax-submit">
+            <label class="small muted">${t("ax.notes")}<textarea name="notes" rows="2"></textarea></label>
+            <div class="row"><button class="btn btn-primary" type="submit">${t("ax.submit")}</button>
+              <a class="btn" href="https://arxiv.org/abs/${esc(aid)}" target="_blank" rel="noopener">arXiv:${esc(aid)}</a></div>
+            <div id="axmsg" class="small" style="margin-top:8px"></div></form>`
+          : `<div class="row"><a class="btn btn-primary" href="${issue}" target="_blank" rel="noopener">${t("ax.request.b")}</a>
+          ${D.auth ? `<button class="btn" data-signin>${t("ax.orSignin")}</button>` : ""}
+          <a class="btn" href="https://arxiv.org/abs/${esc(aid)}" target="_blank" rel="noopener">arXiv:${esc(aid)}</a></div>`}</div>`;
     }
     const steps = [1, 2, 3, 4, 5].map((n) => `<li><div class="step-num">${n}</div><div class="step-body"><h3>${t(`ax.s${n}.t`)}</h3><p>${t(`ax.s${n}.d`)}</p></div></li>`).join("");
     const bps = (D.blueprints || []).map((b) => `<a class="card mcard" href="#/blueprints/${b.id}">
@@ -484,12 +621,54 @@
     const el = document.getElementById("ax-pending");
     if (!el) return;
     try {
-      issueCache ||= await (await fetch(`https://api.github.com/repos/${D.repo}/issues?state=open&per_page=50`)).json();
+      issueCache ||= await gh(`/repos/${D.repo}/issues?state=open&per_page=50`);
       const list = (Array.isArray(issueCache) ? issueCache : []).filter((i) => !i.pull_request && /^\[arxiv\]/i.test(i.title));
       el.innerHTML = list.length ? `<ul class="feed">${list.map((i) => `<li><span class="when">${ago(i.created_at)}</span>
         <span><a href="${esc(i.html_url)}" target="_blank" rel="noopener">#${i.number}</a> ${esc(i.title.replace(/^\[arxiv\]\s*/i, "arXiv:"))}
         <span class="muted">· @${esc(i.user.login)}</span></span></li>`).join("")}</ul>` : t("ax.none");
     } catch { el.textContent = "—"; }
+  }
+
+  // Issue bodies follow the issue forms in .github/ISSUE_TEMPLATE, so the server reads them the
+  // same way whether they were filed here or on GitHub.
+  const formBody = (fields) => fields.map(([h, v]) => `### ${h}\n\n${(v || "").trim() || "_No response_"}`).join("\n\n");
+
+  async function submitArxiv(e) {
+    e.preventDefault();
+    const f = e.target, aid = f.dataset.aid, msg = document.getElementById("axmsg"), btn = f.querySelector("button");
+    btn.disabled = true; msg.textContent = "";
+    try {
+      issueCache = null;
+      issueCache = await gh(`/repos/${D.repo}/issues?state=open&per_page=50`);
+      const dup = issueCache.find((i) => !i.pull_request && /^\[arxiv\]/i.test(i.title) && parseArxiv(i.title.slice(7)) === aid);
+      if (dup) { msg.innerHTML = t("ax.dup", dup.number, esc(dup.html_url)); return; }
+      const iss = await gh(`/repos/${D.repo}/issues`, { method: "POST", body: JSON.stringify({
+        title: `[arXiv] ${aid}`, body: formBody([["arXiv URL or ID", aid], ["Notes (optional)", f.elements.notes.value]]) }) });
+      msg.innerHTML = t("ax.sent", iss.number, esc(iss.html_url));
+      f.querySelector("textarea").disabled = true;
+      issueCache = null; ghCache = {}; loadPending();
+    } catch (err) { msg.textContent = t("err.generic", err.message); btn.disabled = false; return; }
+  }
+
+  async function submitProposal(e) {
+    e.preventDefault();
+    const v = Object.fromEntries(new FormData(document.getElementById("pform")).entries());
+    const msg = document.getElementById("pmsg"), btn = e.target.querySelector("button");
+    const id = (v.id || "").trim();
+    msg.textContent = "";
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) { msg.textContent = t("p.errId"); return; }
+    if (MI[id]) { msg.textContent = t("p.errTaken"); return; }
+    if (!(v.title || "").trim() || !(v.stmt || "").trim()) { msg.textContent = t("p.errReq"); return; }
+    btn.disabled = true;
+    try {
+      const iss = await gh(`/repos/${D.repo}/issues`, { method: "POST", body: JSON.stringify({
+        title: `[Mission] ${id}`,
+        body: formBody([["Mission ID", id], ["Type", v.type], ["Title", v.title], ["Summary", v.summary], ["Tags", v.tags],
+          ["Source title", v.stitle], ["Source URL", v.surl], ["Goal description", v.tdesc],
+          ["Goal statement (Lean)", "```lean\n" + v.stmt.trim() + "\n```"]]) }) });
+      msg.innerHTML = t("p.sent", iss.number, esc(iss.html_url));
+      ghCache = {};
+    } catch (err) { msg.textContent = t("err.generic", err.message); btn.disabled = false; }
   }
 
   const bpCache = {};
@@ -731,6 +910,7 @@
     const line = t("agent.general", siteBase());
     const step = (n, extra = "") => `<li><div class="step-num">${n}</div><div class="step-body">
       <h3>${t(`s.st${n}.t`)}</h3><p>${t(`s.st${n}.d`)}</p>${extra}</div></li>`;
+    const what = (open = false) => `<details class="what-agent"${open ? " open" : ""}><summary>${t("s.what.q")}</summary><div>${t("s.what.a")}</div></details>`;
     const faq = [1, 2, 3, 4, 5].map((n) => `<details class="faq"><summary>${t(`s.q${n}`)}</summary><p>${t(`s.a${n}`)}</p></details>`).join("");
     return `
       <section class="start-hero">
@@ -747,7 +927,7 @@
           <h2>${t("s.steps")}</h2>
           <ol class="stepper">
             ${step(1, `<div class="row"><a class="btn btn-sm" href="#/missions">${t("s.st1.a")}</a><a class="btn btn-sm" href="#/library?status=open">${t("s.st1.b")}</a></div>`)}
-            ${step(2, `<div class="inline-line">${codeBlock(line, false)}</div>`)}
+            ${step(2, `<div class="inline-line">${codeBlock(line, false)}</div>${what()}`)}
             ${step(3)}
             ${step(4)}
             ${step(5)}
@@ -760,6 +940,7 @@
             <div class="label">${t("s.line")}</div>
             ${codeBlock(line, false)}
             <p class="small muted">${t("s.lineNote")}</p>
+            ${what()}
             <p class="small muted">${t("s.byHand")}</p>
           </div>
           <div class="card pad">
@@ -794,13 +975,17 @@
         <label class="full">${t("p.titleF")}<input type="text" name="title"></label>
         <label class="full">${t("p.summary")}<input type="text" name="summary"></label>
         <label>${t("p.tags")}<input type="text" name="tags" placeholder="Number Theory, Combinatorics"></label>
-        <label>${t("p.user")}<input type="text" name="captain"></label>
+        <label>${t("p.user")}<input type="text" name="captain"${ME ? ` value="${esc(ME.login)}" readonly` : ""}></label>
         <label>${t("p.stitle")}<input type="text" name="stitle" placeholder="Author, Title (Year)"></label>
         <label>${t("p.surl")}<input type="text" name="surl" placeholder="https://arxiv.org/abs/…"></label>
         <label>${t("p.tid")}<input type="text" name="tid" value="${nextId}"></label>
         <label>${t("p.tdesc")}<input type="text" name="tdesc" placeholder="For every $n$ …"></label>
         <label class="full">${t("p.stmt")}<textarea name="stmt" rows="2" placeholder="(n : ℕ) (hn : 0 < n) : ∃ p, Nat.Prime p ∧ n < p"></textarea></label>
       </form></div>
+      ${ME ? `<form id="psubmit" class="card pad callout-card" style="margin-top:18px"><h3>${t("p.submitT")}</h3>
+          <p class="muted small">${t("p.submitD")}</p><button class="btn btn-primary" type="submit">${t("p.submit")}</button>
+          <div id="pmsg" class="small" style="margin-top:8px"></div></form>`
+        : D.auth ? `<p class="callout small" style="margin-top:18px">${t("p.signin")} <button class="btn btn-sm" data-signin>${t("auth.signinLong")}</button></p>` : ""}
       <div class="grid grid-cta" style="margin-top:18px" id="pout"></div>`;
   }
 
@@ -835,6 +1020,7 @@
         new Date(D.generated).toLocaleString(LANG), D.toolchain.replace("leanprover/", ""), D.mathlib);
     }
     document.getElementById("start-link").href = LANG === "en" ? "start.md" : `start.${LANG}.md`;
+    paintAuth();
   }
 
   // ---------- router -----------------------------------------------------------------------
@@ -861,6 +1047,7 @@
       case "propose": html = viewPropose(); title = t("nav.propose"); break;
       case "arxiv": html = viewArxiv(q); title = t("nav.arxiv"); break;
       case "blueprints": html = await viewBlueprint(parts[1]); title = t("bp.kicker"); break;
+      case "me": html = viewMe(); title = t("me.title"); break;
       default: html = notFound();
     }
     document.title = title ? `${title} · Lean4All` : "Lean4All";
@@ -894,8 +1081,13 @@
         location.hash = `#/arxiv${v ? "?id=" + enc(v) : ""}`;
       });
       loadPending();
+      document.getElementById("axsubmit")?.addEventListener("submit", submitArxiv);
     }
-    if (page === "propose") { document.getElementById("pform").addEventListener("input", proposeOutput); proposeOutput(); }
+    if (page === "me") loadMe();
+    if (page === "propose") {
+      document.getElementById("pform").addEventListener("input", proposeOutput); proposeOutput();
+      document.getElementById("psubmit")?.addEventListener("submit", submitProposal);
+    }
   }
 
   // ---------- search (/ or Ctrl+K) -------------------------------------------------------
@@ -950,6 +1142,12 @@
   }, { passive: true });
 
   document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-signin]")) { e.preventDefault(); signIn(); return; }
+    if (e.target.closest("[data-signout]")) { e.preventDefault(); signOut(); return; }
+    const wb = e.target.closest("[data-watch]");
+    if (wb) { toggleWatch(wb.dataset.watch); wb.outerHTML = watchBtn(wb.dataset.watch); return; }
+    const sb = e.target.closest("[data-seen]");
+    if (sb) { const w = watched(); w[sb.dataset.seen] = TH[sb.dataset.seen]?.status; store.set("l4a-watch", w); route(); return; }
     const j = e.target.closest("[data-jump]");
     if (j) {
       e.preventDefault();
@@ -984,6 +1182,8 @@
     D = data;
     D.theorems.forEach((x) => (TH[x.id] = x));
     D.missions.forEach((m) => (MI[m.id] = m));
+    return finishSignIn();
+  }).then(() => {
     paintChrome();
     window.addEventListener("hashchange", route);
     route();

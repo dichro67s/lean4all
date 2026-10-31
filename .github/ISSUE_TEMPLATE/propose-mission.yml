@@ -1,0 +1,63 @@
+name: Propose a mission
+description: Launch a mission with one goal theorem. You can also submit this from the site after signing in.
+title: "[Mission] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The Lean4All server checks for new proposals every few minutes. It checks that the goal
+        statement compiles against Mathlib, gives it a theorem number, and publishes the mission
+        marked as not yet reviewed, with you as captain. This issue closes itself when that's done.
+        A moderator compares the statement with the source afterwards.
+  - type: input
+    id: mission-id
+    attributes:
+      label: Mission ID
+      description: lowercase letters, digits and dashes
+      placeholder: my-paper-main-theorem
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options: [Research Paper, Textbook, Open Problem, Classic]
+    validations:
+      required: true
+  - type: input
+    id: title
+    attributes:
+      label: Title
+    validations:
+      required: true
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+  - type: input
+    id: tags
+    attributes:
+      label: Tags
+      placeholder: Number Theory, Combinatorics
+  - type: input
+    id: source-title
+    attributes:
+      label: Source title
+      placeholder: Author, Title (Year)
+  - type: input
+    id: source-url
+    attributes:
+      label: Source URL
+  - type: textarea
+    id: goal-description
+    attributes:
+      label: Goal description
+      description: The goal theorem in words (Markdown and $LaTeX$).
+  - type: textarea
+    id: goal-statement
+    attributes:
+      label: Goal statement (Lean)
+      description: "The Lean signature after the theorem name, e.g. `(n : ℕ) (hn : 0 < n) : ∃ p, Nat.Prime p ∧ n < p`"
+      render: lean
+    validations:
+      required: true

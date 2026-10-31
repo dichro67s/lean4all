@@ -724,6 +724,7 @@ def site(lean: bool) -> None:
         "title": cfg.get("title", "Lean4All"), "tagline": cfg.get("tagline", ""),
         "toolchain": (ROOT / "lean-toolchain").read_text().strip(),
         "mathlib": cfg.get("mathlib", ""),
+        "auth": cfg.get("auth") or None,
         "stats": {"missions": len(mission_list), "theorems": len(theorems), **counts,
                   "contributors": len(users)},
         "missions": mission_list, "theorems": theorems,

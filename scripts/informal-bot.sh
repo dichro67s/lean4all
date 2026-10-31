@@ -5,6 +5,9 @@
 # Install:  (crontab -l; echo "*/5 * * * * $PWD/scripts/informal-bot.sh >> $HOME/.local/state/lean4all-bot.log 2>&1") | crontab -
 set -euo pipefail
 export PATH="$HOME/.elan/bin:$HOME/miniconda3/bin:/usr/local/bin:/usr/bin:/bin"
+# Optional settings, e.g. LEAN4ALL_BOT_TOKEN (lets the bot explain rejected proposals). See auth/README.md.
+[ -f "$HOME/.config/lean4all/bot.env" ] && . "$HOME/.config/lean4all/bot.env"
+export LEAN4ALL_BOT_TOKEN="${LEAN4ALL_BOT_TOKEN:-}"
 REPO="${LEAN4ALL_BOT_DIR:-$HOME/.local/share/lean4all-bot}"
 REMOTE="${LEAN4ALL_REMOTE:-git@github.com:dichro67s/lean4all.git}"
 mkdir -p "$(dirname "$REPO")" "$HOME/.local/state"
@@ -25,6 +28,14 @@ python3 -u scripts/arxiv_blueprint.py --from-issues 2>&1 | while IFS= read -r li
 if [ -s build/commit-message.txt ]; then
   git add blueprints missions theorems definitions
   git commit -q -F build/commit-message.txt && echo "$(date -Is) committed blueprint(s)"
+fi
+
+# 1b. mission proposals (GitHub issues titled "[Mission] ...", filed from the site or the issue form)
+rm -f build/mission-commit-message.txt
+python3 -u scripts/mission_requests.py 2>&1 | while IFS= read -r line; do echo "$(date -Is) missions: $line"; done
+if [ -s build/mission-commit-message.txt ]; then
+  git add missions theorems
+  git commit -q -F build/mission-commit-message.txt && echo "$(date -Is) committed mission proposal(s)"
 fi
 
 # 2. plain-language readings for new or changed statements
