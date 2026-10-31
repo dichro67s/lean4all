@@ -962,10 +962,14 @@
         </div>
         <aside class="start-side">
           <div class="card pad line-card">
+            <div class="pre-req">
+              <div class="label">${t("s.pre.t")}</div>
+              <ul class="checklist small"><li>${t("s.pre.1")}</li><li>${t("s.pre.2")}</li></ul>
+              <p class="small"><a href="#" data-jump="install" data-block="start">${t("s.pre.link")}</a></p>
+            </div>
             <div class="label">${t("s.line")}</div>
             ${codeBlock(line, false)}
             <p class="small muted">${t("s.lineNote")}</p>
-            ${what}
             <p class="small muted">${t("s.byHand")}</p>
           </div>
           <div class="card pad">

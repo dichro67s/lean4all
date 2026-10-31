@@ -70,8 +70,7 @@ code, pre, .mono { font-family: var(--mono); font-size: 13px; }
 .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; color: var(--text); font-size: 17px; }
 .brand:hover { text-decoration: none; }
 .logo { width: 30px; height: 30px; flex: none; }
-.wordmark { display: inline-flex; align-items: flex-end; font: 700 22px/1 var(--serif); letter-spacing: -.02em; }
-.wm-forall { width: 1.02em; height: 1.28em; margin-left: .04em; color: var(--accent); transform: translateY(.05em); }
+.logo-mark { display: block; height: 34px; width: auto; color: var(--text); overflow: visible; }
 .nav { display: flex; gap: 4px; flex: 1; }
 .nav a { color: var(--muted); padding: 6px 10px; border-radius: 8px; font-weight: 500; font-size: 14px; }
 .nav a:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }
@@ -404,3 +403,5 @@ details.install-opt summary { cursor: pointer; padding: 10px 0; font-weight: 600
 details.install-opt[open] { padding-bottom: 12px; }
 details.install-opt ol { padding-left: 20px; margin: 6px 0; display: grid; gap: 6px; }
 .install .code-wrap { margin-bottom: 8px; }
+.line-card .pre-req { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
+.line-card .pre-req .checklist { gap: 6px; margin: 8px 0; }
