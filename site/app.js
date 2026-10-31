@@ -629,6 +629,45 @@
     } catch { el.textContent = "—"; }
   }
 
+  // ---------- status of recent mission proposals (public GitHub data, no sign-in needed) -------
+  const ATTACH_LINK = /https:\/\/github\.com\/(?:user-attachments\/(?:files|assets)\/|[\w.-]+\/[\w.-]+\/files\/\d+\/)/;
+  function issueField(body, label) {
+    const parts = (body || "").split(/^### /m);
+    const sec = parts.find((x) => x.toLowerCase().startsWith(label.toLowerCase() + "\n"));
+    const v = sec ? sec.slice(label.length).trim() : "";
+    return v === "_No response_" ? "" : v;
+  }
+  async function proposalStatus(i) {
+    const id = issueField(i.body, "Mission ID") || i.title.replace(/^\[mission\]\s*/i, "").trim();
+    if (MI[id] || (i.state === "closed" && i.state_reason === "completed")) return { id, st: "done" };
+    if (i.state === "closed") return { id, st: "closed" };
+    const comments = i.comments ? await ghGet(`/repos/${D.repo}/issues/${i.number}/comments?per_page=100`) : [];
+    const all = [i.body || "", ...comments.map((c) => c.body || "")].join("\n");
+    const bot = [...comments].reverse().find((c) => /^Lean4All (could not|has started)/.test(c.body || ""));
+    if (bot && /^Lean4All could not/.test(bot.body)) return { id, st: "rejected" };
+    if (issueField(i.body, "Source file") && !ATTACH_LINK.test(all))
+      return { id, st: /Failed to upload/i.test(all) ? "uploadFailed" : "waitingFile" };
+    return { id, st: bot ? "working" : "queued" };
+  }
+  async function loadProposals(fresh = false) {
+    const el = document.getElementById("pstatus");
+    if (!el) return;
+    if (fresh) Object.keys(ghCache).filter((k) => k.includes("/issues")).forEach((k) => delete ghCache[k]);
+    el.innerHTML = `<p class="small muted">${t("loading")}</p>`;
+    try {
+      const issues = await ghGet(`/repos/${D.repo}/issues?state=all&per_page=40&sort=created&direction=desc`);
+      const list = issues.filter((i) => !i.pull_request && /^\[mission\]/i.test(i.title)).slice(0, 8);
+      const rows = await Promise.all(list.map(async (i) => ({ i, ...(await proposalStatus(i).catch(() => ({ st: "unknown" }))) })));
+      el.innerHTML = rows.length ? `<ul class="pst-list">${rows.map(({ i, id, st }) => `<li>
+          <div><span class="pst pst-${st}">${t(`p.st.${st}`)}</span>
+            <a href="${esc(i.html_url)}" target="_blank" rel="noopener">#${i.number}</a>
+            <b>${esc(issueField(i.body, "Title") || id || i.title)}</b>
+            <span class="muted small">· @${esc(i.user.login)} · ${ago(i.created_at)}</span></div>
+          <div class="small muted">${st === "done" && id ? `<a href="#/missions/${esc(id)}">${t("p.st.open")}</a>` : t(`p.stHint.${st}`)}</div>
+        </li>`).join("")}</ul>` : `<p class="small muted">${t("p.st.none")}</p>`;
+    } catch { el.innerHTML = `<p class="small muted">${t("p.st.err")}</p>`; }
+  }
+
   // Issue bodies follow the issue forms in .github/ISSUE_TEMPLATE, so the server reads them the
   // same way whether they were filed here or on GitHub.
   const formBody = (fields) => fields.map(([h, v]) => `### ${h}\n\n${(v || "").trim() || "_No response_"}`).join("\n\n");
@@ -1400,6 +1439,11 @@
       <div class="crumbs"><a href="#/">${t("nav.home")}</a> / ${t("nav.propose")}</div>
       <h1>${t("p.title")}</h1>
       <p class="muted">${t("p.lead")}</p>
+      <section class="card pad p-status">
+        <div class="row"><h2 style="margin:0">${t("p.st.title")}</h2><span class="spacer"></span>
+          <button type="button" class="btn btn-sm" id="pstatus-refresh">${t("p.st.refresh")}</button></div>
+        <div id="pstatus"></div>
+      </section>
       <form id="pform" class="p-steps" onsubmit="return false">
         ${sec(1, `<div class="src-choice">
             <div class="src-box"><b>${t("p.optFile")}</b>
@@ -1584,6 +1628,8 @@
       document.getElementById("pform").addEventListener("input", (e) => { if (e.target.id !== "pfile") proposeOutput(); }); proposeOutput();
       srcFiles = [];
       srcInput = null; srcUploads = []; srcCut = "";
+      loadProposals();
+      document.getElementById("pstatus-refresh").addEventListener("click", () => loadProposals(true));
       document.getElementById("pfile").addEventListener("change", (e) => checkSourceFiles(e.target).then(checkSourceUrl));
       if (!window.l4aUpHandler) window.l4aUpHandler = document.addEventListener("click", (e) => {
         const b = e.target.closest("[data-up]");
