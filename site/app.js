@@ -676,7 +676,7 @@
   const SRC_MAX_PAGES = 60;         // pages the server reads (scripts/source_files.py)
   let srcUploads = [];              // files the site made ({blob, name}); attach these instead of the originals
   let srcCut = "";                  // page range the site already cut the PDF to
-  let srcInput = null, srcRun = 0, srcBusy = false;
+  let srcInput = null, srcRun = 0, srcBusy = false, srcScan = false;
 
   // pdf-lib, loaded only when someone picks a PDF.
   let pdfLibP;
@@ -762,10 +762,20 @@
     if (m === t || m.startsWith(t)) return fromMeta;   // same title (metadata has the right case) or a fuller one
     return fromText;
   }
-  async function pdfTitle(file) {
+  // Title, plus whether the chosen pages are a scan (no text layer: the server must read each page as a picture).
+  async function pdfInspect(file, pagesSpec) {
     const pdfjs = await loadPdfJs();
     const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
-    try { return await titleOfDoc(doc); } finally { doc.destroy(); }
+    try {
+      const title = await titleOfDoc(doc).catch(() => "");
+      let r;
+      try { r = pageRange(pagesSpec, doc.numPages); } catch {}
+      r ||= [1, Math.min(doc.numPages, SRC_MAX_PAGES)];
+      const sample = [...new Set([r[0], Math.round((r[0] + r[1]) / 2), r[1]])];
+      let chars = 0;
+      for (const p of sample) chars += (await (await doc.getPage(p)).getTextContent()).items.reduce((n, i) => n + i.str.replace(/\s/g, "").length, 0);
+      return { title, scan: chars < 200 * sample.length };
+    } finally { doc.destroy(); }
   }
   async function titleOfDoc(doc) {
     {
@@ -954,7 +964,7 @@
 
     const pdf = list.find((f) => f.kind === "pdf" && !f.err);
     const meta = {};
-    const textTitle = pdf ? pdfTitle(pdf.file).catch(() => "") : Promise.resolve("");
+    const inspect = pdf ? pdfInspect(pdf.file, pages).catch(() => ({})) : Promise.resolve({});
     if (pdf) {
       try {
         const out = await cutPdf(pdf.file, pages, meta);
@@ -981,17 +991,20 @@
     }
     if (run !== srcRun) return;   // a newer selection or page range took over
     srcUploads = uploads; srcBusy = false;
-    // Title of the material: PDF metadata, LaTeX \title, or the file name.
+    // Title of the material: PDF text or metadata, or LaTeX \title.
     const tex = list.find((f) => f.kind === "tex" && !f.err);
     if (tex && !meta.title) {
       const text = await tex.file.text();
       meta.title = texField(text, "title"); meta.author = texField(text, "author");
     }
     // The title printed in the material itself; never the file name. Nothing found: leave the fields alone.
-    const title = pickTitle(await textTitle, goodTitle(meta.title));
-    if (run === srcRun && title) autofillFromSource(title, goodTitle(meta.author));
-    render(uploads.length ? `<div class="src-up"><p class="small">${t("p.upNote")}</p><div class="row">${uploads.map((u, i) =>
-      `<button type="button" class="btn btn-sm" data-up="${i}">⬇ ${esc(u.name)} (${mb(u.blob.size)})</button>`).join("")}</div></div>` : "");
+    const info = await inspect;
+    if (run !== srcRun) return;
+    srcScan = !!info.scan && !pdf.err;
+    const title = pickTitle(info.title || "", goodTitle(meta.title));
+    if (title) autofillFromSource(title, goodTitle(meta.author));
+    render((srcScan ? `<p class="small src-warn">${t("p.scanWarn")}</p>` : "") + (uploads.length ? `<div class="src-up"><p class="small">${t("p.upNote")}</p><div class="row">${uploads.map((u, i) =>
+      `<button type="button" class="btn btn-sm" data-up="${i}">⬇ ${esc(u.name)} (${mb(u.blob.size)})</button>`).join("")}</div></div>` : ""));
     proposeOutput();
   }
 
@@ -1460,11 +1473,13 @@
       go.innerHTML = `${need}
         <ol class="p-go">
           <li>${t("p.go1")}</li>
-          ${srcFiles.length ? `<li>${t("p.go2")}<div class="row" style="margin-top:6px">${attach}</div></li>` : ""}
+          ${srcFiles.length ? `<li>${t("p.go2")}<div class="row" style="margin-top:6px">${attach}</div>
+            <p class="small src-warn">${t("p.go2Warn")}</p></li>` : ""}
           <li>${t("p.go3")}</li>
         </ol>
         <a class="btn btn-primary${miss.length || srcBusy ? " disabled" : ""}" ${miss.length || srcBusy ? 'aria-disabled="true"' : ""}
           href="${ghUrl(`/issues/new?template=propose-mission.yml&${qs}`)}" target="_blank" rel="noopener">${t("p.goBtn")}</a>
+        ${srcFiles.length || (srcLink && srcLink.ok && !srcLink.ref) ? `<p class="small src-warn" style="margin-top:12px">${t(srcScan ? "p.timeScan" : "p.time")}</p>` : ""}
         <p class="small muted" style="margin-top:10px">${t("p.after")}</p>`;
     }
     const pn = document.getElementById("pneed");

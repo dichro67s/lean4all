@@ -430,3 +430,4 @@ details.install-opt ol { padding-left: 20px; margin: 6px 0; display: grid; gap: 
 .src-or { align-self: center; color: var(--muted); font-weight: 600; }
 .src-ok { color: #1a7f37; } .src-bad { color: #c62828; }
 @media (max-width: 760px) { .src-choice { grid-template-columns: 1fr; } .src-or { justify-self: center; } }
+.src-warn { color: #b45309; background: color-mix(in srgb, #f59e0b 12%, transparent); border-radius: 8px; padding: 8px 10px; margin: 8px 0 0; }
