@@ -734,28 +734,106 @@
   }
 
   // ---- mission title and id from the material ----
+  // pdf.js reads the text of a PDF's first pages; the title is the largest horizontal text there.
+  let pdfjsP;
+  const loadPdfJs = () => pdfjsP ||= new Promise((res, rej) => {
+    const base = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+    const el = document.createElement("script");
+    el.src = base + "pdf.min.js";
+    el.integrity = "sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e";
+    el.crossOrigin = "anonymous";
+    el.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = base + "pdf.worker.min.js"; res(window.pdfjsLib); };
+    el.onerror = () => { pdfjsP = null; rej(new Error("pdf.js")); };
+    document.head.appendChild(el);
+  });
+  const NOT_TITLE = /^(contents|table of contents|preface|foreword|introduction|chapter|part|copyright|index|abstract|dedication|acknowledg)/i;
+  const SMALL_WORDS = new Set("a an the of and or in on for to with via by at from as is".split(" "));
+  function niceCase(x) {   // "CONJUGACY CLASSES OF …" -> "Conjugacy Classes of …"; leaves mixed case alone
+    x = x.replace(/\s+/g, " ").trim();
+    if (/\p{Ll}/u.test(x) || !/(\p{Lu}.*){4}/u.test(x)) return x;
+    return x.split(" ").map((w, k) => /^[IVX]+$/.test(w) ? w
+      : (k && SMALL_WORDS.has(w.toLowerCase())) ? w.toLowerCase()
+      : w.toLowerCase().replace(/(^|[-(\/])(\p{L})/gu, (m, p, c) => p + c.toUpperCase())).join(" ");
+  }
+  function pickTitle(fromText, fromMeta) {   // text on the page vs. the PDF's metadata
+    const norm = (x) => x.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+    if (!fromText || !fromMeta) return fromText || fromMeta;
+    const t = norm(fromText), m = norm(fromMeta);
+    if (m === t || m.startsWith(t)) return fromMeta;   // same title (metadata has the right case) or a fuller one
+    return fromText;
+  }
+  async function pdfTitle(file) {
+    const pdfjs = await loadPdfJs();
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    try {
+      for (let p = 1; p <= Math.min(8, doc.numPages); p++) {
+        const tc = await (await doc.getPage(p)).getTextContent();
+        const items = tc.items
+          .filter((i) => i.str && i.str.trim() && Math.abs(i.transform[1]) < 1e-3 && Math.abs(i.transform[2]) < 1e-3   // horizontal only (skips arXiv's side stamp)
+            && !/arxiv:\s*\d/i.test(i.str))
+          .map((i) => ({ s: i.str, h: Math.round(Math.abs(i.transform[3]) * 10) / 10, y: i.transform[5], x: i.transform[4], w: i.width }));
+        if (items.length < 3) continue;               // cover image or blank page
+        const sizes = items.flatMap((i) => Array(Math.min(i.s.length, 200)).fill(i.h)).sort((a, b) => a - b);
+        const body = sizes[Math.floor(sizes.length / 2)];
+        // Group items into lines (same baseline), top to bottom; a line's size is its largest text.
+        const rows = [];
+        for (const i of items.sort((a, b) => b.y - a.y || a.x - b.x)) {
+          const r = rows.find((r) => Math.abs(r.y - i.y) < Math.max(r.h, i.h) * 0.4);
+          if (r) { r.items.push(i); r.h = Math.max(r.h, i.h); } else rows.push({ y: i.y, h: i.h, items: [i] });
+        }
+        rows.sort((a, b) => b.y - a.y);
+        const text = (r) => r.items.sort((a, b) => a.x - b.x).reduce((acc, i, k, arr) => {
+          const prev = arr[k - 1];
+          const gap = prev ? i.x - (prev.x + (prev.w || 0)) : 0;
+          return acc + (prev && gap > i.h * 0.2 && !/\s$/.test(acc) && !/^\s/.test(i.s) ? " " : "") + i.s;
+        }, "");
+        const max = Math.max(...rows.map((r) => r.h));
+        if (max < body * 1.2) {
+          // No bigger text: AMS-style papers print the title at body size in capitals on the top line.
+          const top = rows[0] && text(rows[0]).trim();
+          if (p === 1 && top && /\p{Lu}{3}/u.test(top) && !/\p{Ll}/u.test(top) && top.split(/\s+/).length >= 2) {
+            const caps = [rows[0]];
+            for (let k = 1; k < rows.length && caps.length < 3; k++) {
+              const x = text(rows[k]).trim();
+              if (rows[k].h !== rows[0].h || /\p{Ll}/u.test(x) || caps[caps.length - 1].y - rows[k].y > rows[0].h * 1.8) break;
+              caps.push(rows[k]);
+            }
+            const title = goodTitle(niceCase(caps.map(text).join(" ")));
+            if (title && !NOT_TITLE.test(title)) return title;
+          }
+          continue;
+        }
+        const start = rows.findIndex((r) => r.h >= max * 0.97);
+        const lines = [rows[start]];
+        for (let k = start + 1; k < rows.length && lines.length < 3; k++) {   // title continues on lines of the same size
+          if (rows[k].h < max * 0.85 || lines[lines.length - 1].y - rows[k].y > max * 2.5) break;
+          lines.push(rows[k]);
+        }
+        const title = goodTitle(niceCase(lines.map(text).join(" ")));
+        if (title && !NOT_TITLE.test(title)) return title;
+      }
+      return "";
+    } finally { doc.destroy(); }
+  }
+
   const JUNK_TITLE = /^(untitled|microsoft (word|powerpoint)|document\d*|title|slide|layout|print|scan|img|image|photo|dsc|pxl|screenshot)\b|\.(docx?|tex|dvi|ps|indd)$/i;
   const goodTitle = (x) => (x = (x || "").replace(/\s+/g, " ").trim()).length >= 4 && !JUNK_TITLE.test(x) && /[\p{L}]{3}/u.test(x) ? x : "";
-  const titleFromName = (n) => goodTitle(n.replace(/\.[^.]+$/, "")
-    .replace(/[[(][^\])]*(lib|z-?lib|www\.|\.com|\.org|\.net)[^\])]*[\])]/gi, "")   // download-site tags
-    .replace(/-p\d+-\d+(-part\d+)?$/, "").replace(/[_.]+/g, " "));
   function texField(tex, cmd) {
     const m = tex.match(new RegExp(`\\\\${cmd}\\s*(?:\\[[^\\]]*\\])?\\s*\\{((?:[^{}]|\\{[^{}]*\\})*)\\}`));
     return m ? m[1].replace(/\\(thanks|footnote)\{[^{}]*\}/g, "").replace(/\s*\\and\s*/g, ", ").replace(/\\\\|\\newline/g, " ")
       .replace(/\\[a-zA-Z]+\*?/g, "").replace(/[{}~]/g, " ").replace(/\s+/g, " ").trim() : "";
   }
-  function missionSlug(title, fileName) {
+  function missionSlug(title) {
     const slug = (x) => x.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
       .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
     let id = slug(title);
-    if (id.length < 3) id = slug(titleFromName(fileName) || "");
     if (id.length < 3) id = "mission-" + new Date().toLocaleDateString("sv").replace(/-/g, "");   // e.g. a Korean title
     if (id.length > 48) id = id.slice(0, 48).replace(/-[^-]*$/, "") || id.slice(0, 48);
     let out = id;
     for (let n = 2; MI[out]; n++) out = `${id}-${n}`;
     return out;
   }
-  function autofillFromSource(title, author, fileName) {
+  function autofillFromSource(title, author) {
     if (!title) return;
     const f = document.getElementById("pform");
     // fill a field only if it's empty or still holds what we filled in before
@@ -765,7 +843,7 @@
       el.value = val; el.dataset.auto = val;
     };
     put("title", title);
-    put("id", missionSlug(title, fileName));
+    put("id", missionSlug(title));
     put("stitle", author ? `${author.split(/\s*[;,]\s*|\s+and\s+/)[0]}${/[;,]|\sand\s/.test(author) ? " et al." : ""}, ${title}` : title);
   }
 
@@ -802,6 +880,7 @@
 
     const pdf = list.find((f) => f.kind === "pdf" && !f.err);
     const meta = {};
+    const textTitle = pdf ? pdfTitle(pdf.file).catch(() => "") : Promise.resolve("");
     if (pdf) {
       try {
         const out = await cutPdf(pdf.file, pages, meta);
@@ -834,8 +913,9 @@
       const text = await tex.file.text();
       meta.title = texField(text, "title"); meta.author = texField(text, "author");
     }
-    const first = list.find((f) => !f.err);
-    if (first) autofillFromSource(goodTitle(meta.title) || titleFromName(first.file.name), goodTitle(meta.author), first.file.name);
+    // The title printed in the material itself; never the file name. Nothing found: leave the fields alone.
+    const title = pickTitle(await textTitle, goodTitle(meta.title));
+    if (run === srcRun && title) autofillFromSource(title, goodTitle(meta.author));
     render(uploads.length ? `<div class="src-up"><p class="small">${t("p.upNote")}</p><div class="row">${uploads.map((u, i) =>
       `<button type="button" class="btn btn-sm" data-up="${i}">⬇ ${esc(u.name)} (${mb(u.blob.size)})</button>`).join("")}</div></div>` : "");
     proposeOutput();
