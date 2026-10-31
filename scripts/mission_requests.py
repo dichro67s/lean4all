@@ -248,8 +248,15 @@ def main() -> int:
                 continue                    # reading a book is slow: one per run
             links = S.attachment_links(iss, api(f"/repos/{REPO}/issues/{num}/comments?per_page=100"),
                                        REPO.split("/")[0])
-            if not links:
-                continue                    # the file hasn't been attached yet; check again next run
+            if not links:                   # the file hasn't been attached yet; check again next run
+                if TOKEN and not state.get(f"{num}:nudged"):
+                    comment(num, "Lean4All is waiting for the source file. Drag it into a comment on this issue "
+                                 "(or into the Source file box when editing the issue). Accepted: PDF, DjVu, "
+                                 "LaTeX (.tex), PNG, JPEG, or a .zip of those. Nothing happens until it's here.")
+                    state[f"{num}:nudged"] = 1
+                    STATE.parent.mkdir(parents=True, exist_ok=True)
+                    STATE.write_text(json.dumps(state))
+                continue
             if state.get(f"{num}:links") == links:
                 continue                    # these files were already rejected; wait for new ones
             if tries >= 99:
@@ -262,6 +269,13 @@ def main() -> int:
         try:
             if links:
                 file_runs += 1
+                if TOKEN and not state.get(f"{num}:started"):
+                    comment(num, "Lean4All has started on this source. It reads the pages, finds the theorems and "
+                                 "writes Lean statements for them. This usually takes 30 minutes to 2 hours; a "
+                                 "scanned PDF takes several hours (every page is read as a picture first). This "
+                                 "issue closes itself when the mission is published.")
+                    state[f"{num}:started"] = 1
+                    STATE.write_text(json.dumps(state))
                 mid, tid = build_from_source(iss, None if url else links)
             else:
                 mid, tid = build(iss)
