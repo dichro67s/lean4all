@@ -838,11 +838,6 @@
     if (first) autofillFromSource(goodTitle(meta.title) || titleFromName(first.file.name), goodTitle(meta.author), first.file.name);
     render(uploads.length ? `<div class="src-up"><p class="small">${t("p.upNote")}</p><div class="row">${uploads.map((u, i) =>
       `<button type="button" class="btn btn-sm" data-up="${i}">⬇ ${esc(u.name)} (${mb(u.blob.size)})</button>`).join("")}</div></div>` : "");
-    box.querySelectorAll("[data-up]").forEach((b) => b.addEventListener("click", () => {
-      const u = uploads[+b.dataset.up], a = document.createElement("a");
-      a.href = URL.createObjectURL(u.blob); a.download = u.name;
-      a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    }));
     proposeOutput();
   }
 
@@ -904,9 +899,7 @@
         body: formBody([["Mission ID", id], ["Type", v.type], ["Title", v.title], ["Summary", v.summary], ["Tags", v.tags],
           ["Source title", v.stitle], ["Source URL", v.surl], ["Goal description", v.tdesc],
           ["Goal statement (Lean)", v.stmt.trim() ? "```lean\n" + v.stmt.trim() + "\n```" : ""], ["Pages", v.pages],
-          ["Source file", srcFiles.length ? srcFiles.map((f) => `${f.file.name} (${SRC_LABEL[f.kind]}, ${mb(f.file.size)}${f.note ? ` → ${f.note}` : ""})`).join("\n")
-            + (srcCut ? `\n\nAlready cut by the site to pages ${srcCut}.` : "")
-            + `\n\n_The file${srcUploads.length > 1 ? "s are" : " is"} attached in a comment below${srcUploads.length ? ": " + srcUploads.map((u) => u.name).join(", ") : ""}._` : ""]]) }) });
+          ["Source file", srcFiles.length ? srcCutNote() + "\n_The file is attached in a comment below._" : ""]]) }) });
       msg.innerHTML = srcFiles.length ? t("p.sentFile", iss.number, esc(iss.html_url)) : t("p.sent", iss.number, esc(iss.html_url));
       ghCache = {};
     } catch (err) { msg.textContent = t("err.generic", err.message); btn.disabled = false; }
@@ -1233,62 +1226,100 @@
     `<div style="margin-top:24px;max-width:820px">${creditBlock(true)}</div>`);
 
   function viewPropose() {
-    const nextId = "T" + String(Math.max(0, ...D.theorems.map((x) => +x.id.slice(1))) + 1).padStart(4, "0");
-    const types = ["Research Paper", "Textbook", "Open Problem", "Classic"];
+    const types = ["Textbook", "Research Paper", "Open Problem", "Classic"];
+    const sec = (n, body, note = "") => `<section class="card pad p-step"><h2><span class="step-num">${n}</span>${t(`p.s${n}`)}</h2>
+      ${note ? `<p class="small muted">${note}</p>` : ""}${body}</section>`;
     return `
       <div class="crumbs"><a href="#/">${t("nav.home")}</a> / ${t("nav.propose")}</div>
       <h1>${t("p.title")}</h1>
       <p class="muted">${t("p.lead")}</p>
-      <div class="card pad"><form id="pform" class="form-grid">
-        <label>${t("p.id")}<input type="text" name="id" placeholder="my-paper-main-theorem" required></label>
-        <label>${t("p.type")}<select name="type">${types.map((x) => `<option value="${x}">${esc(typeName(x))}</option>`).join("")}</select></label>
-        <label class="full">${t("p.titleF")}<input type="text" name="title"></label>
-        <label class="full">${t("p.summary")}<input type="text" name="summary"></label>
-        <label>${t("p.tags")}<input type="text" name="tags" placeholder="Number Theory, Combinatorics"></label>
-        <label>${t("p.user")}<input type="text" name="captain"${ME ? ` value="${esc(ME.login)}" readonly` : ""}></label>
-        <label>${t("p.stitle")}<input type="text" name="stitle" placeholder="Author, Title (Year)"></label>
-        <label>${t("p.surl")}<input type="text" name="surl" placeholder="https://arxiv.org/abs/…"></label>
-        <div class="full src-box">
-          <label>${t("p.file")}<input type="file" id="pfile" multiple accept=".pdf,.djvu,.djv,.tex,.png,.jpg,.jpeg,.zip"></label>
-          <p class="small muted">${t("p.fileHelp")}</p>
-          <p class="small muted">${t("p.fileRights")}</p>
-          <div id="pfilelist"></div>
-        </div>
-        <label>${t("p.pages")}<input type="text" name="pages" placeholder="45-80"></label>
-        <label>${t("p.tid")}<input type="text" name="tid" value="${nextId}"></label>
-        <label>${t("p.tdesc")}<input type="text" name="tdesc" placeholder="For every $n$ …"></label>
-        <label class="full">${t("p.stmt")}<textarea name="stmt" rows="2" placeholder="(n : ℕ) (hn : 0 < n) : ∃ p, Nat.Prime p ∧ n < p"></textarea></label>
-      </form></div>
-      ${ME ? `<form id="psubmit" class="card pad callout-card" style="margin-top:18px"><h3>${t("p.submitT")}</h3>
-          <p class="muted small">${t("p.submitD")}</p><button class="btn btn-primary" type="submit">${t("p.submit")}</button>
-          <div id="pmsg" class="small" style="margin-top:8px"></div></form>`
-        : D.auth ? `<p class="callout small" style="margin-top:18px">${t("p.signin")} <button class="btn btn-sm" data-signin>${t("auth.signinLong")}</button></p>` : ""}
-      <div class="grid grid-cta" style="margin-top:18px" id="pout"></div>`;
+      <form id="pform" class="p-steps" onsubmit="return false">
+        ${sec(1, `<div class="src-box">
+            <input type="file" id="pfile" multiple accept=".pdf,.djvu,.djv,.tex,.png,.jpg,.jpeg,.zip">
+            <p class="small muted">${t("p.fileHelp")}</p>
+            <p class="small muted">${t("p.fileRights")}</p>
+            <div id="pfilelist"></div>
+          </div>
+          <div class="form-grid" style="margin-top:12px"><label>${t("p.pages")}<input type="text" name="pages" placeholder="45-80"></label></div>`, t("p.s1d"))}
+        ${sec(2, `<div class="form-grid">
+            <label class="full">${t("p.titleF")}<input type="text" name="title"></label>
+            <label>${t("p.id")}<input type="text" name="id" placeholder="my-paper-main-theorem"></label>
+            <label>${t("p.type")}<select name="type">${types.map((x) => `<option value="${x}">${esc(typeName(x))}</option>`).join("")}</select></label>
+            <label>${t("p.stitle")}<input type="text" name="stitle" placeholder="Author, Title (Year)"></label>
+            <label>${t("p.surl")}<input type="text" name="surl" placeholder="https://…"></label>
+            <label class="full">${t("p.summary")}<input type="text" name="summary"></label>
+            <label class="full">${t("p.tags")}<input type="text" name="tags" placeholder="Number Theory, Combinatorics"></label>
+          </div>`, t("p.s2d"))}
+        ${sec(3, `<div class="form-grid">
+            <label class="full">${t("p.tdesc")}<input type="text" name="tdesc" placeholder="For every $n$ …"></label>
+            <label class="full">${t("p.stmt")}<textarea name="stmt" rows="2" placeholder="(n : ℕ) (hn : 0 < n) : ∃ p, Nat.Prime p ∧ n < p"></textarea></label>
+          </div>`, t("p.s3d"))}
+      </form>
+      ${sec(4, ME ? `<form id="psubmit"><p class="small muted">${t("p.submitD")}</p>
+            <div id="pneed" class="small"></div>
+            <button class="btn btn-primary" type="submit">${t("p.submit")}</button>
+            <div id="pmsg" class="small" style="margin-top:8px"></div></form>`
+          : `<p class="small muted">${t("p.goD")}</p><div id="pgo"></div>
+            ${D.auth ? `<p class="small muted" style="margin-top:12px">${t("p.signin")} <button class="btn btn-sm" data-signin>${t("auth.signinLong")}</button></p>` : ""}`)}
+      <details class="p-adv"><summary>${t("p.adv")}</summary><div class="grid grid-cta" style="margin-top:12px" id="pout"></div></details>`;
+  }
+
+  // What's still missing before the proposal can be sent (shown next to the submit button).
+  function proposeMissing(v) {
+    const miss = [];
+    if (!(v.title || "").trim()) miss.push(t("p.titleF"));
+    if (!/^[a-z0-9][a-z0-9-]*$/.test((v.id || "").trim())) miss.push(t("p.id"));
+    else if (MI[v.id.trim()]) miss.push(t("p.errTaken"));
+    if (!srcFiles.length && !(v.stmt || "").trim()) miss.push(t("p.needGoal"));
+    if (srcFiles.some((f) => f.err)) miss.push(t("p.errFile"));
+    return miss;
   }
 
   function proposeOutput() {
     const f = document.getElementById("pform");
     if (!f) return;
     const v = Object.fromEntries(new FormData(f).entries());
-    const id = v.id || "my-mission", tid = v.tid || "T9999";
-    const q = (s) => JSON.stringify(s || "");
-    const tg = `[${(v.tags || "").split(",").map((s) => s.trim()).filter(Boolean).map(q).join(", ")}]`;
-    const who = v.captain || "your-github-username";
+    const id = (v.id || "").trim() || "my-mission";
+    const tid = "T" + String(Math.max(0, ...D.theorems.map((x) => +x.id.slice(1))) + 1).padStart(4, "0");
+    const miss = proposeMissing(v);
+    const need = miss.length ? `<p class="p-need">${t("p.need")} ${miss.map(esc).join(", ")}</p>` : "";
+    const attach = srcUploads.length ? srcUploads.map((u, i) => `<button type="button" class="btn btn-sm" data-up="${i}">⬇ ${esc(u.name)}</button>`).join(" ")
+      : srcFiles.map((x) => `<b>${esc(x.file.name)}</b>`).join(", ");
+
+    const go = document.getElementById("pgo");
+    if (go) {
+      const pre = { title: `[Mission] ${id}`, "mission-id": v.id, type: v.type, "mission-title": v.title, summary: v.summary, tags: v.tags,
+        "source-title": v.stitle, "source-url": v.surl, pages: v.pages, "goal-description": v.tdesc, "goal-statement": v.stmt,
+        "source-file": srcFiles.length ? srcCutNote() : "" };
+      const qs = Object.entries(pre).filter(([, x]) => x).map(([k, x]) => `${k}=${enc(x)}`).join("&");
+      go.innerHTML = `${need}
+        <ol class="p-go">
+          <li>${t("p.go1")}</li>
+          ${srcFiles.length ? `<li>${t("p.go2")}<div class="row" style="margin-top:6px">${attach}</div></li>` : ""}
+          <li>${t("p.go3")}</li>
+        </ol>
+        <a class="btn btn-primary${miss.length || srcBusy ? " disabled" : ""}" ${miss.length || srcBusy ? 'aria-disabled="true"' : ""}
+          href="${ghUrl(`/issues/new?template=propose-mission.yml&${qs}`)}" target="_blank" rel="noopener">${t("p.goBtn")}</a>
+        <p class="small muted" style="margin-top:10px">${t("p.after")}</p>`;
+    }
+    const pn = document.getElementById("pneed");
+    if (pn) pn.innerHTML = need;
+
+    const q = (x) => JSON.stringify(x || "");
+    const tg = `[${(v.tags || "").split(",").map((x) => x.trim()).filter(Boolean).map(q).join(", ")}]`;
+    const who = ME?.login || "your-github-username";
     const mission = `id: ${id}\ntitle: ${q(v.title)}\ntype: ${v.type}\ntags: ${tg}\ncaptain: ${who}\nreviewed: false\nsummary: ${q(v.summary)}\ndescription: |\n  ${v.summary || "Describe the mission."}\nsource:\n  title: ${q(v.stitle)}\n  url: ${q(v.surl)}\ngoal: ${tid}\nmilestones:\n  - title: ${q(v.title || "Main theorem")}\n    statement: ${q(v.tdesc)}\n    theorem: ${tid}\n`;
     const card = `id: ${tid}\ntitle: ${q(v.title)}\ndescription: |\n  ${v.tdesc || "Natural-language statement."}\nstatement: ${q(v.stmt || "(n : ℕ) : n = n")}\ntags: ${tg}\nsource: ${q(v.stitle)}\nmission: ${id}\nproposer: ${who}\n`;
     const nf = (path, val) => ghUrl(`/new/${D.branch}?filename=${enc(path)}&value=${enc(val)}`);
-    if (srcFiles.length && !ME) {
-      const pre = { "mission-id": v.id, type: v.type, title: v.title, summary: v.summary, tags: v.tags, "source-title": v.stitle,
-        "source-url": v.surl, pages: v.pages, "goal-description": v.tdesc, "goal-statement": v.stmt };
-      const qs = Object.entries(pre).filter(([, x]) => x).map(([k, x]) => `${k}=${enc(x)}`).join("&");
-      document.getElementById("pout").innerHTML = `<div class="card pad"><p>${t("p.issueForm")}</p>
-        <a class="btn btn-primary btn-sm" href="${ghUrl(`/issues/new?template=propose-mission.yml&${qs}`)}" target="_blank" rel="noopener">${t("p.issueFormBtn")}</a></div>`;
-      return;
-    }
-    document.getElementById("pout").innerHTML = `
+    document.getElementById("pout").innerHTML = `<p class="small muted full" style="grid-column:1/-1">${t("p.advD")}</p>
       <div class="card pad"><h3>missions/${esc(id)}.yaml</h3>${codeBlock(mission, false)}<p><a class="btn btn-sm" href="${nf(`missions/${id}.yaml`, mission)}">${t("p.create")}</a></p></div>
       <div class="card pad"><h3>theorems/${esc(tid)}.yaml</h3>${codeBlock(card, false)}<p><a class="btn btn-sm" href="${nf(`theorems/${tid}.yaml`, card)}">${t("p.create")}</a></p></div>`;
   }
+
+  // Text for the issue's "Source file" field: what was chosen and whether the site already cut it.
+  const srcCutNote = () => srcFiles.map((f) => `${f.file.name} (${SRC_LABEL[f.kind] || "?"}, ${mb(f.file.size)}${f.note ? ` → ${f.note}` : ""})`).join("\n")
+    + (srcCut ? `\n\nAlready cut by the site to pages ${srcCut}.` : "")
+    + `\n\nAttach here: ${srcUploads.length ? srcUploads.map((u) => u.name).join(", ") : srcFiles.map((f) => f.file.name).join(", ")}\n`;
 
   const notFound = () => `<div class="empty"><h2>${t("notFound")}</h2><p><a href="#/">${t("backHome")}</a></p></div>`;
 
@@ -1372,8 +1403,18 @@
     if (page === "propose") {
       document.getElementById("pform").addEventListener("input", (e) => { if (e.target.id !== "pfile") proposeOutput(); }); proposeOutput();
       srcFiles = [];
-      srcInput = null;
+      srcInput = null; srcUploads = []; srcCut = "";
       document.getElementById("pfile").addEventListener("change", (e) => checkSourceFiles(e.target));
+      if (!window.l4aUpHandler) window.l4aUpHandler = document.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-up]");
+        if (b) {
+          const u = srcUploads[+b.dataset.up], a = document.createElement("a");
+          a.href = URL.createObjectURL(u.blob); a.download = u.name;
+          a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+          return;
+        }
+        if (e.target.closest("#pgo a.disabled")) e.preventDefault();
+      }) || true;
       let pt;
       document.querySelector("#pform [name=pages]").addEventListener("input", () => { clearTimeout(pt); pt = setTimeout(() => checkSourceFiles(), 500); });
       document.getElementById("psubmit")?.addEventListener("submit", submitProposal);

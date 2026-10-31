@@ -29,7 +29,7 @@ body:
     validations:
       required: true
   - type: input
-    id: title
+    id: mission-title   # not "title": that query parameter sets the issue title
     attributes:
       label: Title
     validations:

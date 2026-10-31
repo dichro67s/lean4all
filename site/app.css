@@ -412,3 +412,16 @@ details.install-opt ol { padding-left: 20px; margin: 6px 0; display: grid; gap: 
 .src-list { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
 .src-list li.ok > span:first-child { color: #1a7f37; font-weight: 700; }
 .src-list li.bad > span:first-child, .src-list li.bad .small { color: #c62828; }
+
+/* Propose page: numbered steps */
+.p-steps { display: grid; gap: 16px; }
+.p-step { margin-top: 0; }
+.p-step + .p-step, .p-steps + .p-step { margin-top: 16px; }
+.p-step h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; font-size: 20px; }
+.p-step h2 .step-num { position: static; flex: none; width: 28px; height: 28px; font-size: 14px; }
+.p-step > p.small { margin: 0 0 12px; }
+.p-go { margin: 8px 0 14px; padding-left: 20px; display: grid; gap: 8px; }
+.p-need { color: #b45309; font-weight: 600; margin: 0 0 8px; }
+.btn.disabled { opacity: .45; pointer-events: auto; cursor: not-allowed; }
+.p-adv { margin-top: 22px; }
+.p-adv summary { cursor: pointer; color: var(--muted); }
