@@ -52,6 +52,9 @@ body:
     id: source-url
     attributes:
       label: Source URL
+      description: >-
+        An arXiv paper, a DOI, or a direct link to a PDF (or DjVu, LaTeX, image, zip). With no file
+        attached and no Lean goal, the server downloads it and extracts the theorems from it.
   - type: textarea
     id: goal-description
     attributes:

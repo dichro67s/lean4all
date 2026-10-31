@@ -18,12 +18,15 @@ from __future__ import annotations
 import argparse
 import base64
 import io
+import ipaddress
 import json
 import re
+import socket
 import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.parse
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -33,6 +36,7 @@ from informalize import MODEL, URL  # noqa: E402
 
 UA = {"User-Agent": "lean4all-sources/1.0 (https://github.com/dichro67s/lean4all)"}
 MAX_FILE = 30 * 1024 * 1024        # GitHub allows 25 MB attachments; leave some room
+MAX_URL_FILE = 150 * 1024 * 1024   # a linked file is downloaded by the server directly
 MAX_UNZIPPED = 250 * 1024 * 1024    # the site zips files too big for GitHub; they may unpack large
 MAX_MEMBER = 200 * 1024 * 1024
 MAX_PAGES = 60                     # pages read from a PDF or DjVu
@@ -76,6 +80,76 @@ def download(url: str) -> tuple[str, bytes]:
     if len(data) > MAX_FILE:
         raise SourceError(f"`{Path(url).name}` is larger than {MAX_FILE // 2**20} MB.")
     return name or Path(url).name, data
+
+
+# ----------------------------------------------------------------------------------------------
+# Linked files (the proposer gave a URL instead of attaching a file)
+# ----------------------------------------------------------------------------------------------
+
+def public_url(url: str) -> str:
+    """Only http(s) to public internet hosts: never this machine or the local network (the model
+    server and other services listen there)."""
+    u = urllib.parse.urlsplit(url)
+    if u.scheme not in ("http", "https") or not u.hostname:
+        raise SourceError("The link must start with http:// or https://.")
+    try:
+        addrs = {a[4][0] for a in socket.getaddrinfo(u.hostname, u.port or (443 if u.scheme == "https" else 80))}
+    except OSError as e:
+        raise SourceError(f"`{u.hostname}` could not be found.") from e
+    if not addrs or not all(ipaddress.ip_address(a.split("%")[0]).is_global for a in addrs):
+        raise SourceError("The link must point to a public website.")
+    return url
+
+
+class _CheckedRedirects(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        public_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_opener = urllib.request.build_opener(_CheckedRedirects)
+DOI_RE = re.compile(r"\b(10\.\d{4,9}/[^\s\"<>]+)", re.I)
+
+
+def open_access_pdf(doi: str) -> str | None:
+    """An open-access PDF for a DOI, from OpenAlex."""
+    try:
+        with _opener.open(urllib.request.Request(f"https://api.openalex.org/works/doi:{urllib.parse.quote(doi)}",
+                                                 headers=UA), timeout=60) as r:
+            w = json.load(r)
+    except Exception:  # noqa: BLE001
+        return None
+    for loc in [w.get("best_oa_location")] + (w.get("locations") or []):
+        if loc and loc.get("pdf_url"):
+            return loc["pdf_url"]
+    return None
+
+
+def fetch_url(url: str) -> tuple[str, bytes]:
+    """Download a linked file. A DOI or a landing page with a DOI is resolved to its open-access PDF."""
+    url = url.strip()
+    m = DOI_RE.search(url)
+    if m and ("doi.org/" in url or url.startswith("10.")):
+        pdf = open_access_pdf(m.group(1).rstrip(".,;)"))
+        if not pdf:
+            raise SourceError("This DOI has no open-access PDF. Please attach the file instead.")
+        url = pdf
+    req = urllib.request.Request(public_url(url), headers=UA)
+    try:
+        with _opener.open(req, timeout=300) as r:
+            data = r.read(MAX_URL_FILE + 1)
+            final = r.geturl()
+    except SourceError:
+        raise
+    except Exception as e:  # noqa: BLE001
+        raise SourceError(f"The link could not be downloaded ({e}).") from e
+    if len(data) > MAX_URL_FILE:
+        raise SourceError(f"The linked file is larger than {MAX_URL_FILE // 2**20} MB.")
+    if data.lstrip()[:15].lower().startswith((b"<!doctype html", b"<html")):
+        raise SourceError("The link opens a web page, not a file. Link directly to the PDF (or other file), "
+                          "or attach the file instead.")
+    name = Path(urllib.parse.unquote(urllib.parse.urlsplit(final).path)).name or "linked-file"
+    return name, data
 
 
 # ----------------------------------------------------------------------------------------------
@@ -164,7 +238,7 @@ def parse_pages(spec: str, total: int) -> tuple[int, int]:
     if not spec:
         if total > MAX_PAGES:
             raise SourceError(f"The file has {total} pages. Please give a page range of at most {MAX_PAGES} pages "
-                              "(e.g. `45-80`) in a new proposal.")
+                              "(e.g. `45-80`).")
         return 1, total
     m = re.fullmatch(r"(\d+)\s*(?:-\s*(\d+))?", spec)
     if not m:

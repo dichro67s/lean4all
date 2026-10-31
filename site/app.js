@@ -765,7 +765,10 @@
   async function pdfTitle(file) {
     const pdfjs = await loadPdfJs();
     const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
-    try {
+    try { return await titleOfDoc(doc); } finally { doc.destroy(); }
+  }
+  async function titleOfDoc(doc) {
+    {
       for (let p = 1; p <= Math.min(8, doc.numPages); p++) {
         const tc = await (await doc.getPage(p)).getTextContent();
         const items = tc.items
@@ -813,7 +816,7 @@
         if (title && !NOT_TITLE.test(title)) return title;
       }
       return "";
-    } finally { doc.destroy(); }
+    }
   }
 
   const JUNK_TITLE = /^(untitled|microsoft (word|powerpoint)|document\d*|title|slide|layout|print|scan|img|image|photo|dsc|pxl|screenshot)\b|\.(docx?|tex|dvi|ps|indd)$/i;
@@ -833,7 +836,7 @@
     for (let n = 2; MI[out]; n++) out = `${id}-${n}`;
     return out;
   }
-  function autofillFromSource(title, author) {
+  function autofillFromSource(title, author, cite = "") {
     if (!title) return;
     const f = document.getElementById("pform");
     // fill a field only if it's empty or still holds what we filled in before
@@ -844,7 +847,78 @@
     };
     put("title", title);
     put("id", missionSlug(title));
-    put("stitle", author ? `${author.split(/\s*[;,]\s*|\s+and\s+/)[0]}${/[;,]|\sand\s/.test(author) ? " et al." : ""}, ${title}` : title);
+    put("stitle", cite || (author ? `${author.split(/\s*[;,]\s*|\s+and\s+/)[0]}${/[;,]|\sand\s/.test(author) ? " et al." : ""}, ${title}` : title));
+  }
+
+  // ---- a link instead of a file ----
+  let srcLink = null, linkRun = 0;   // {ok, err, note, pages}
+  const ARXIV_RE = /arxiv\.org\/(?:abs|pdf)\/(\d{4}\.\d{4,5}|[a-z-]+(?:\.[A-Z]{2})?\/\d{7})|^(?:arxiv:\s*)?(\d{4}\.\d{4,5})(?:v\d+)?$/i;
+  const DOI_RE = /\b(10\.\d{4,9}\/[^\s"<>]+)/;
+  async function openAlex(doi) {
+    const r = await fetch(`https://api.openalex.org/works/doi:${encodeURIComponent(doi)}`);
+    if (!r.ok) throw new Error(r.status);
+    const w = await r.json();
+    const authors = (w.authorships || []).map((a) => a.author?.display_name).filter(Boolean);
+    const pdf = [w.best_oa_location, ...(w.locations || [])].find((l) => l?.pdf_url)?.pdf_url || "";
+    return { title: w.title || w.display_name || "", authors, year: w.publication_year, pdf };
+  }
+  const citeName = (authors, title, year, tail = "") =>
+    `${authors.length ? authors[0] + (authors.length > 1 ? " et al." : "") + ", " : ""}${title}${year || tail ? ` (${[tail, year].filter(Boolean).join(", ")})` : ""}`;
+
+  async function checkSourceUrl() {
+    const run = ++linkRun, box = document.getElementById("purlinfo");
+    const url = (document.querySelector("#pform [name=surl]")?.value || "").trim();
+    const show = (cls, html) => { if (run === linkRun) box.innerHTML = html ? `<p class="small src-${cls}">${html}</p>` : ""; };
+    srcLink = null;
+    if (!url) { show("", ""); proposeOutput(); return; }
+    if (srcFiles.length) { srcLink = { ok: true, ref: true }; show("muted", t("p.urlRef")); proposeOutput(); return; }
+    show("muted", t("p.urlChecking"));
+    let link = { ok: true }, title = "", cite = "";
+    try {
+      const ax = url.match(ARXIV_RE), doi = !ax && url.match(DOI_RE);
+      if (ax) {
+        const id = ax[1] || ax[2];
+        const w = await openAlex(`10.48550/arXiv.${id}`).catch(() => null);
+        title = w?.title || ""; cite = w ? citeName(w.authors, w.title, w.year, `arXiv:${id}`) : "";
+        link.note = `✓ arXiv:${esc(id)}${title ? ` · <i>${esc(title)}</i>` : ""}`;
+        setType("Research Paper");
+      } else if (doi) {
+        const w = await openAlex(doi[1].replace(/[.,;)]+$/, ""));
+        title = w.title; cite = citeName(w.authors, w.title, w.year);
+        if (!w.pdf) link = { ok: false, err: t("p.urlNoOA") };
+        else link.note = `✓ DOI · <i>${esc(title)}</i> · ${t("p.urlOA")}`;
+      } else if (!/^https?:\/\//i.test(url)) {
+        link = { ok: false, err: t("p.urlBad") };
+      } else {
+        // Try to read it here (works when the site allows it); otherwise the server checks it after submitting.
+        let doc = null;
+        try { doc = await (await loadPdfJs()).getDocument({ url, disableAutoFetch: true, disableStream: true }).promise; } catch {}
+        if (doc) {
+          try {
+            title = await titleOfDoc(doc).catch(() => "");
+            link.pages = doc.numPages;
+            try {
+              if (!pageRange(document.querySelector("#pform [name=pages]").value, doc.numPages) && doc.numPages > SRC_MAX_PAGES)
+                link = { ok: false, err: t("p.errNeedPages", doc.numPages, SRC_MAX_PAGES) };
+            } catch (e) { link = { ok: false, err: String(e) }; }
+            if (link.ok) link.note = `✓ PDF, ${t("p.nPages", doc.numPages)}${title ? ` · <i>${esc(title)}</i>` : ""}`;
+          } finally { doc.destroy(); }
+        } else {
+          const r = await fetch(url, { method: "GET" }).catch(() => null);
+          if (r && /text\/html/i.test(r.headers.get("content-type") || "")) link = { ok: false, err: t("p.urlHtml") };
+          else link.note = t("p.urlLater");
+        }
+      }
+    } catch { link.note = t("p.urlLater"); }
+    if (run !== linkRun) return;
+    srcLink = link;
+    show(link.ok ? (link.note?.startsWith("✓") ? "ok" : "muted") : "bad", link.ok ? link.note : `✗ ${esc(link.err)}`);
+    if (title) autofillFromSource(title, "", cite);
+    proposeOutput();
+  }
+  function setType(x) {
+    const el = document.querySelector("#pform [name=type]");
+    if (el && !el.dataset.touched) el.value = x;
   }
 
   async function checkSourceFiles(input = srcInput) {
@@ -1314,11 +1388,19 @@
       <h1>${t("p.title")}</h1>
       <p class="muted">${t("p.lead")}</p>
       <form id="pform" class="p-steps" onsubmit="return false">
-        ${sec(1, `<div class="src-box">
-            <input type="file" id="pfile" multiple accept=".pdf,.djvu,.djv,.tex,.png,.jpg,.jpeg,.zip">
-            <p class="small muted">${t("p.fileHelp")}</p>
-            <p class="small muted">${t("p.fileRights")}</p>
-            <div id="pfilelist"></div>
+        ${sec(1, `<div class="src-choice">
+            <div class="src-box"><b>${t("p.optFile")}</b>
+              <input type="file" id="pfile" multiple accept=".pdf,.djvu,.djv,.tex,.png,.jpg,.jpeg,.zip">
+              <p class="small muted">${t("p.fileHelp")}</p>
+              <p class="small muted">${t("p.fileRights")}</p>
+              <div id="pfilelist"></div>
+            </div>
+            <div class="src-or">${t("p.or")}</div>
+            <div class="src-box"><b>${t("p.optUrl")}</b>
+              <input type="text" name="surl" inputmode="url" placeholder="https://arxiv.org/abs/2401.12345 · DOI · https://…/book.pdf">
+              <p class="small muted">${t("p.urlHelp")}</p>
+              <div id="purlinfo"></div>
+            </div>
           </div>
           <div class="form-grid" style="margin-top:12px"><label>${t("p.pages")}<input type="text" name="pages" placeholder="45-80"></label></div>`, t("p.s1d"))}
         ${sec(2, `<div class="form-grid">
@@ -1326,7 +1408,6 @@
             <label>${t("p.id")}<input type="text" name="id" placeholder="my-paper-main-theorem"></label>
             <label>${t("p.type")}<select name="type">${types.map((x) => `<option value="${x}">${esc(typeName(x))}</option>`).join("")}</select></label>
             <label>${t("p.stitle")}<input type="text" name="stitle" placeholder="Author, Title (Year)"></label>
-            <label>${t("p.surl")}<input type="text" name="surl" placeholder="https://…"></label>
             <label class="full">${t("p.summary")}<input type="text" name="summary"></label>
             <label class="full">${t("p.tags")}<input type="text" name="tags" placeholder="Number Theory, Combinatorics"></label>
           </div>`, t("p.s2d"))}
@@ -1350,7 +1431,11 @@
     if (!(v.title || "").trim()) miss.push(t("p.titleF"));
     if (!/^[a-z0-9][a-z0-9-]*$/.test((v.id || "").trim())) miss.push(t("p.id"));
     else if (MI[v.id.trim()]) miss.push(t("p.errTaken"));
-    if (!srcFiles.length && !(v.stmt || "").trim()) miss.push(t("p.needGoal"));
+    const linkOk = srcLink && srcLink.ok && !srcLink.ref;
+    if (!srcFiles.length && !(v.stmt || "").trim()) {
+      if (srcLink && !srcLink.ok) miss.push(srcLink.err);
+      else if (!linkOk) miss.push(t("p.needGoal"));
+    }
     if (srcFiles.some((f) => f.err)) miss.push(t("p.errFile"));
     return miss;
   }
@@ -1484,7 +1569,7 @@
       document.getElementById("pform").addEventListener("input", (e) => { if (e.target.id !== "pfile") proposeOutput(); }); proposeOutput();
       srcFiles = [];
       srcInput = null; srcUploads = []; srcCut = "";
-      document.getElementById("pfile").addEventListener("change", (e) => checkSourceFiles(e.target));
+      document.getElementById("pfile").addEventListener("change", (e) => checkSourceFiles(e.target).then(checkSourceUrl));
       if (!window.l4aUpHandler) window.l4aUpHandler = document.addEventListener("click", (e) => {
         const b = e.target.closest("[data-up]");
         if (b) {
@@ -1496,7 +1581,11 @@
         if (e.target.closest("#pgo a.disabled")) e.preventDefault();
       }) || true;
       let pt;
-      document.querySelector("#pform [name=pages]").addEventListener("input", () => { clearTimeout(pt); pt = setTimeout(() => checkSourceFiles(), 500); });
+      document.querySelector("#pform [name=pages]").addEventListener("input", () => { clearTimeout(pt); pt = setTimeout(() => { checkSourceFiles(); checkSourceUrl(); }, 500); });
+      let ut;
+      srcLink = null;
+      document.querySelector("#pform [name=surl]").addEventListener("input", () => { clearTimeout(ut); ut = setTimeout(checkSourceUrl, 600); });
+      document.querySelector("#pform [name=type]").addEventListener("change", (e) => { e.target.dataset.touched = "1"; });
       document.getElementById("psubmit")?.addEventListener("submit", submitProposal);
     }
   }

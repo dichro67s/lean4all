@@ -105,7 +105,7 @@ def build(iss: dict) -> tuple[str, str]:
     mtype = f.get("type") if f.get("type") in TYPES else "Research Paper"
     title, stmt = f.get("title", ""), f.get("goal statement (lean)", "")
     if not title or not stmt:
-        raise ValueError("A title and a goal statement (or an attached source file) are required.")
+        raise ValueError("A title and a goal statement (or a source file or link) are required.")
     tags = [t.strip() for t in f.get("tags", "").split(",") if t.strip()][:8] or ["Mathematics"]
     desc = f.get("goal description") or title
     tid = next_theorem_id()
@@ -143,8 +143,16 @@ def module_for(mid: str) -> str:
     return base if not (L.DEFINITIONS / f"{base}.lean").exists() else base + "2"
 
 
-def build_from_file(iss: dict, links: list[str]) -> tuple[str, str]:
-    """Read the attached source and run the blueprint pipeline. Returns (mission id, goal or '')."""
+def source_url(f: dict) -> str:
+    """The link to extract from: given, and no file and no Lean goal (then it's only a reference)."""
+    if f.get("source file") or f.get("goal statement (lean)"):
+        return ""
+    return f.get("source url", "").strip()
+
+
+def build_from_source(iss: dict, links: list[str] | None = None) -> tuple[str, str]:
+    """Read the attached files, or the linked file/arXiv paper, and run the blueprint pipeline.
+    Returns (mission id, goal or '')."""
     import arxiv_blueprint as B
     f = fields(iss.get("body") or "")
     for k, n in LIMITS.items():
@@ -158,19 +166,40 @@ def build_from_file(iss: dict, links: list[str]) -> tuple[str, str]:
     title = f.get("title", "")
     if not title:
         raise ValueError("A title is required.")
-    print(f"issue #{iss['number']}: reading {len(links)} attached file(s)")
-    parts = S.collect([S.download(u) for u in links])
-    cut = "already cut by the site" in f.get("source file", "").lower()   # the files hold just the chosen pages
-    kind, text = S.read(parts, "" if cut else f.get("pages", ""), log=print)
-    if len(re.sub(r"\s", "", text)) < 100:
-        raise S.SourceError("No text could be read from the attached file.")
-    print(f"  {kind}: {len(text):,} characters")
+    url = "" if links else source_url(f)
     stitle = f.get("source title") or title
     meta = {"arxiv": None, "title": title, "authors": [], "abstract": f.get("summary", ""), "categories": [],
             "url": f.get("source url") or iss["html_url"], "published": "", "slug": mid, "module": module_for(mid),
             "label": stitle + (f", pp. {f['pages']}" if f.get("pages") else ""),
             "type": f.get("type") if f.get("type") in TYPES else "Textbook",
             "tags": [t.strip() for t in f.get("tags", "").split(",") if t.strip()][:8]}
+    aid = None
+    if url and re.search(r"arxiv\.org/|^(arxiv:)?\s*\d{4}\.\d{4,5}", url, re.I):
+        try:
+            aid = B.parse_id(url)
+        except ValueError:
+            aid = None
+    if aid:   # an arXiv paper: its LaTeX source and metadata, as on the arXiv page
+        print(f"issue #{iss['number']}: arXiv:{aid}")
+        am = B.fetch_meta(aid)
+        meta.update({k: am[k] for k in ("arxiv", "authors", "categories", "published", "url")},
+                    abstract=f.get("summary") or am["abstract"], label=am["label"],
+                    tags=meta["tags"] or am["tags"], type=f.get("type") if f.get("type") in TYPES else "Research Paper")
+        with tempfile.TemporaryDirectory() as tmp:
+            kind, text = B.download_source(aid, Path(tmp))
+    else:
+        if links:
+            print(f"issue #{iss['number']}: reading {len(links)} attached file(s)")
+            files = [S.download(u) for u in links]
+        else:
+            print(f"issue #{iss['number']}: downloading {url}")
+            files = [S.fetch_url(url)]
+        parts = S.collect(files)
+        cut = "already cut by the site" in f.get("source file", "").lower()   # the files hold just the chosen pages
+        kind, text = S.read(parts, "" if cut else f.get("pages", ""), log=print)
+    if len(re.sub(r"\s", "", text)) < 100:
+        raise S.SourceError("No text could be read from the source.")
+    print(f"  {kind}: {len(text):,} characters")
     hint = "\n".join(x for x in (f.get("goal description", ""), f.get("goal statement (lean)", "")) if x)
     try:
         B.run_source(meta, kind, text, login, iss["number"], print, hint=hint)
@@ -204,8 +233,17 @@ def main() -> int:
         tries = state.get(str(num), 0)
         if len(done) >= MAX_PER_RUN:
             continue
-        links = []
-        if fields(iss.get("body") or "").get("source file"):
+        links, f = [], fields(iss.get("body") or "")
+        url = source_url(f)
+        if url:
+            if file_runs >= 1:
+                continue                    # reading a book is slow: one per run
+            links = [url]                   # remembered like attachments, so an edited link is tried again
+            if state.get(f"{num}:links") == links:
+                continue
+            if tries >= 99:
+                tries = 0
+        elif f.get("source file"):
             if file_runs >= 1:
                 continue                    # reading a book is slow: one per run
             links = S.attachment_links(iss, api(f"/repos/{REPO}/issues/{num}/comments?per_page=100"),
@@ -224,15 +262,16 @@ def main() -> int:
         try:
             if links:
                 file_runs += 1
-                mid, tid = build_from_file(iss, links)
+                mid, tid = build_from_source(iss, None if url else links)
             else:
                 mid, tid = build(iss)
         except S.SourceError as e:
             state[str(num)], state[f"{num}:links"] = 99, links
             STATE.write_text(json.dumps(state))
             print(f"issue #{num} file rejected: {e}")
-            comment(num, f"Lean4All could not use the attached file.\n\n{e}\n\n"
-                         "Attach a corrected file in a new comment on this issue and it will be tried again. "
+            again = ("Edit the Source URL in this issue, or attach the file in a new comment, and it will be tried again."
+                     if url else "Attach a corrected file in a new comment on this issue and it will be tried again.")
+            comment(num, f"Lean4All could not use the {'linked' if url else 'attached'} file.\n\n{e}\n\n{again} "
                          "Accepted: PDF, DjVu, LaTeX (.tex), PNG, JPEG, or a .zip of those.")
             continue
         except ValueError as e:
