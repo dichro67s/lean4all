@@ -703,10 +703,11 @@
   }
 
   // Cut the chosen pages out of a PDF; split into parts if one file would be over GitHub's limit.
-  async function cutPdf(file, pagesSpec) {
+  async function cutPdf(file, pagesSpec, meta = {}) {
     const { PDFDocument } = await loadPdfLib();
-    const src = await PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true });
+    const src = await PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true, updateMetadata: false });
     const total = src.getPageCount();
+    try { meta.title = src.getTitle() || ""; meta.author = src.getAuthor() || ""; } catch {}
     let r = pageRange(pagesSpec, total);
     if (!r) {
       if (total > SRC_MAX_PAGES) throw t("p.errNeedPages", total, SRC_MAX_PAGES);
@@ -730,6 +731,42 @@
     }
     const base = file.name.replace(/\.[^.]+$/, "") + `-p${r[0]}-${r[1]}`;
     return { total, range: r, parts: blobs.map((blob, i) => ({ blob, name: blobs.length > 1 ? `${base}-part${i + 1}.pdf` : `${base}.pdf` })) };
+  }
+
+  // ---- mission title and id from the material ----
+  const JUNK_TITLE = /^(untitled|microsoft (word|powerpoint)|document\d*|title|slide|layout|print|scan|img|image|photo|dsc|pxl|screenshot)\b|\.(docx?|tex|dvi|ps|indd)$/i;
+  const goodTitle = (x) => (x = (x || "").replace(/\s+/g, " ").trim()).length >= 4 && !JUNK_TITLE.test(x) && /[\p{L}]{3}/u.test(x) ? x : "";
+  const titleFromName = (n) => goodTitle(n.replace(/\.[^.]+$/, "")
+    .replace(/[[(][^\])]*(lib|z-?lib|www\.|\.com|\.org|\.net)[^\])]*[\])]/gi, "")   // download-site tags
+    .replace(/-p\d+-\d+(-part\d+)?$/, "").replace(/[_.]+/g, " "));
+  function texField(tex, cmd) {
+    const m = tex.match(new RegExp(`\\\\${cmd}\\s*(?:\\[[^\\]]*\\])?\\s*\\{((?:[^{}]|\\{[^{}]*\\})*)\\}`));
+    return m ? m[1].replace(/\\(thanks|footnote)\{[^{}]*\}/g, "").replace(/\s*\\and\s*/g, ", ").replace(/\\\\|\\newline/g, " ")
+      .replace(/\\[a-zA-Z]+\*?/g, "").replace(/[{}~]/g, " ").replace(/\s+/g, " ").trim() : "";
+  }
+  function missionSlug(title, fileName) {
+    const slug = (x) => x.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    let id = slug(title);
+    if (id.length < 3) id = slug(titleFromName(fileName) || "");
+    if (id.length < 3) id = "mission-" + new Date().toLocaleDateString("sv").replace(/-/g, "");   // e.g. a Korean title
+    if (id.length > 48) id = id.slice(0, 48).replace(/-[^-]*$/, "") || id.slice(0, 48);
+    let out = id;
+    for (let n = 2; MI[out]; n++) out = `${id}-${n}`;
+    return out;
+  }
+  function autofillFromSource(title, author, fileName) {
+    if (!title) return;
+    const f = document.getElementById("pform");
+    // fill a field only if it's empty or still holds what we filled in before
+    const put = (name, val) => {
+      const el = f.elements[name];
+      if (!el || !val || (el.value && el.value !== el.dataset.auto)) return;
+      el.value = val; el.dataset.auto = val;
+    };
+    put("title", title);
+    put("id", missionSlug(title, fileName));
+    put("stitle", author ? `${author.split(/\s*[;,]\s*|\s+and\s+/)[0]}${/[;,]|\sand\s/.test(author) ? " et al." : ""}, ${title}` : title);
   }
 
   async function checkSourceFiles(input = srcInput) {
@@ -764,9 +801,10 @@
     render(list.some((f) => !f.err && (f.zip || f.kind === "pdf")) ? `<p class="small muted">${t("p.preparing")}</p>` : "");
 
     const pdf = list.find((f) => f.kind === "pdf" && !f.err);
+    const meta = {};
     if (pdf) {
       try {
-        const out = await cutPdf(pdf.file, pages);
+        const out = await cutPdf(pdf.file, pages, meta);
         if (out.parts) {
           uploads.push(...out.parts);
           srcCut = `${out.range[0]}-${out.range[1]}`;
@@ -790,6 +828,14 @@
     }
     if (run !== srcRun) return;   // a newer selection or page range took over
     srcUploads = uploads; srcBusy = false;
+    // Title of the material: PDF metadata, LaTeX \title, or the file name.
+    const tex = list.find((f) => f.kind === "tex" && !f.err);
+    if (tex && !meta.title) {
+      const text = await tex.file.text();
+      meta.title = texField(text, "title"); meta.author = texField(text, "author");
+    }
+    const first = list.find((f) => !f.err);
+    if (first) autofillFromSource(goodTitle(meta.title) || titleFromName(first.file.name), goodTitle(meta.author), first.file.name);
     render(uploads.length ? `<div class="src-up"><p class="small">${t("p.upNote")}</p><div class="row">${uploads.map((u, i) =>
       `<button type="button" class="btn btn-sm" data-up="${i}">⬇ ${esc(u.name)} (${mb(u.blob.size)})</button>`).join("")}</div></div>` : "");
     box.querySelectorAll("[data-up]").forEach((b) => b.addEventListener("click", () => {
