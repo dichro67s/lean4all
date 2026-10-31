@@ -2,6 +2,7 @@
 (() => {
   "use strict";
   let D = null;           // data.json
+  const MY_BUILD = (document.currentScript?.src.match(/[?&]v=(\d+)/) || [])[1] || "";   // stamped by the site build
   let TH = {}, MI = {};   // theorems / missions by id
 
   // ---------- language ---------------------------------------------------------------------
@@ -1749,6 +1750,15 @@
   paintChrome();
   app.innerHTML = `<p class="muted loading">${t("loading")}</p>`;
   fetch("data.json", { cache: "no-cache" }).then((r) => r.json()).then((data) => {
+    // GitHub Pages lets browsers keep index.html for 10 minutes, so after a deploy this script can be
+    // the old one. data.json is always fresh: if its build is newer, reload once under a new URL.
+    const fresh = String(data.generated || "").replace(/\D/g, "").slice(0, 14);
+    const qs = new URLSearchParams(location.search);
+    if (MY_BUILD && fresh && fresh !== MY_BUILD && qs.get("v") !== fresh) {
+      qs.set("v", fresh);
+      location.replace(`${location.pathname}?${qs}${location.hash}`);
+      return new Promise(() => {});
+    }
     D = data;
     D.theorems.forEach((x) => (TH[x.id] = x));
     D.missions.forEach((m) => (MI[m.id] = m));
