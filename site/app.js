@@ -1472,13 +1472,13 @@
       const qs = Object.entries(pre).filter(([, x]) => x).map(([k, x]) => `${k}=${enc(x)}`).join("&");
       go.innerHTML = `${need}
         <ol class="p-go">
-          <li>${t("p.go1")}</li>
+          <li>${t("p.go1")}
+            <div style="margin-top:8px"><a class="btn btn-primary${miss.length || srcBusy ? " disabled" : ""}" ${miss.length || srcBusy ? 'aria-disabled="true"' : ""}
+              href="${ghUrl(`/issues/new?template=propose-mission.yml&${qs}`)}" target="_blank" rel="noopener">${t("p.goBtn")}</a></div></li>
           ${srcFiles.length ? `<li>${t("p.go2")}<div class="row" style="margin-top:6px">${attach}</div>
             <p class="small src-warn">${t("p.go2Warn")}</p></li>` : ""}
           <li>${t("p.go3")}</li>
         </ol>
-        <a class="btn btn-primary${miss.length || srcBusy ? " disabled" : ""}" ${miss.length || srcBusy ? 'aria-disabled="true"' : ""}
-          href="${ghUrl(`/issues/new?template=propose-mission.yml&${qs}`)}" target="_blank" rel="noopener">${t("p.goBtn")}</a>
         ${srcFiles.length || (srcLink && srcLink.ok && !srcLink.ref) ? `<p class="small src-warn" style="margin-top:12px">${t(srcScan ? "p.timeScan" : "p.time")}</p>` : ""}
         <p class="small muted" style="margin-top:10px">${t("p.after")}</p>`;
     }
@@ -1593,7 +1593,16 @@
           a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
           return;
         }
-        if (e.target.closest("#pgo a.disabled")) e.preventDefault();
+        const go = e.target.closest("#pgo a.btn-primary");
+        if (go) {
+          e.preventDefault();
+          if (go.classList.contains("disabled")) return;
+          // A separate window (not a tab), so this page stays visible next to GitHub's form.
+          const w = Math.min(1100, screen.availWidth - 40), h = screen.availHeight - 80;
+          const win = window.open(go.href, "l4a-github", `popup,width=${w},height=${h},left=${screen.availWidth - w},top=20`);
+          if (!win) window.open(go.href, "_blank");   // popup blocked: fall back to a tab
+          else win.focus();
+        }
       }) || true;
       let pt;
       document.querySelector("#pform [name=pages]").addEventListener("input", () => { clearTimeout(pt); pt = setTimeout(() => { checkSourceFiles(); checkSourceUrl(); }, 500); });
