@@ -290,6 +290,8 @@ def main() -> int:
             continue
         except ValueError as e:
             state[str(num)] = 99   # the proposal itself is wrong; don't retry
+            if links:              # ...unless its files or link change (otherwise this repeats every run)
+                state[f"{num}:links"] = links
             STATE.write_text(json.dumps(state))
             print(f"issue #{num} rejected: {str(e).splitlines()[0]}")
             comment(num, f"Lean4All could not publish this proposal.\n\n{e}\n\n"
