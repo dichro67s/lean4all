@@ -46,7 +46,21 @@ if [ -n "$(git status --porcelain -- informal)" ]; then
   git commit -qm "Qwen informalization: ${ids% }" -m "Automated read-back by ${QWEN_MODEL:-Qwen3.8-Flash-Next} (scripts/informal-bot.sh)."
 fi
 
+# Push. Someone else may have pushed meanwhile (a book can take hours), so rebase and retry.
+# Never lose finished work: the next run resets to origin/main, so if pushing keeps failing,
+# park the commits on a branch on GitHub.
 n=$(git rev-list --count origin/main..HEAD)
 if [ "$n" -gt 0 ]; then
-  git push -q origin main && echo "$(date -Is) pushed $n commit(s)"
+  pushed=0
+  for attempt in 1 2 3; do
+    if git push -q origin main 2>/dev/null; then pushed=1; break; fi
+    git fetch -q origin main
+    git rebase -q origin/main || { git rebase --abort; break; }
+  done
+  if [ "$pushed" = 1 ]; then
+    echo "$(date -Is) pushed $n commit(s)"
+  else
+    b="bot-unpushed-$(date +%Y%m%d-%H%M%S)"
+    git push -q origin "HEAD:refs/heads/$b" && echo "$(date -Is) could not push to main; saved $n commit(s) on branch $b"
+  fi
 fi

@@ -677,7 +677,7 @@ def formalize_items(items: list[dict], mod: str, defs: str, plan: dict, macros: 
                 f"{' (' + it['name'] + ')' if it['name'] else ''}, section “{it['section']}”:\n{it['tex']}"
                 + (f"\n\nResults its proof cites:\n{cited}" if cited else "")
                 + (f"\n\nYour previous attempt `{it.get('lean', '')}` was rejected:\n{feedback}\nFix it." if feedback else ""))
-        out = safe_chat(STMT_SYSTEM, user, STMT_SCHEMA, 2500)
+        out = safe_chat(STMT_SYSTEM, user, STMT_SCHEMA, 5000)
         if not out:
             it["note"] = "model error"
             return
@@ -723,7 +723,7 @@ def audit(it: dict, defs: str) -> tuple[str, str]:
     user = f"Lean 4 (Mathlib) statement:\n```lean\ntheorem X {it['lean']}\n```"
     if defs:
         user += f"\n\nDefinitions it uses (opened):\n```lean\n{defs}\n```"
-    rb = safe_chat(READBACK_SYSTEM, user, READBACK_SCHEMA, 1500)
+    rb = safe_chat(READBACK_SYSTEM, user, READBACK_SCHEMA, 3000)
     if not rb:
         return "mismatch", "could not read the statement back"
     it["readback"] = rb
