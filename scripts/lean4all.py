@@ -212,7 +212,9 @@ def load_missions() -> tuple[dict[str, dict], dict[str, list[str]]]:
         if m.get("id") != mid:
             errs.append("field `id` must match the file name")
         for field in ("title", "type", "captain", "summary", "goal"):
-            if not m.get(field) and not (field == "goal" and m.get("blueprint")):
+            # no goal yet: a blueprint mission, a part still being prepared, or a book split into parts
+            if not m.get(field) and not (field == "goal" and (m.get("blueprint") or m.get("status") in
+                                                              ("preparing", "series", "empty", "failed"))):
                 errs.append(f"missing field `{field}`")
         for i, ms in enumerate(m.get("milestones") or []):
             if not isinstance(ms, dict) or not ms.get("title"):
@@ -671,13 +673,23 @@ def site(lean: bool) -> None:
         mission_list.append({
             **{k: m.get(k) for k in ("id", "title", "title_ko", "type", "tags", "captain", "summary",
                                     "summary_ko", "description", "description_ko", "source", "goal",
-                                    "reviewed", "blueprint")},
+                                    "reviewed", "blueprint", "status", "part_of", "parts", "pages")},
             "milestones": ms, "theorems": members, "created": created, "updated": last,
             "completed": goal_status in ("proved", "disproved"), "goal_status": goal_status,
             "contributors": sorted(p for p in people if p),
         })
         activity.append({"date": created, "kind": "mission", "mission": mid,
                          "user": m.get("captain")})
+
+    # A book split into parts: its progress is that of its parts.
+    by_mid = {m["id"]: m for m in mission_list}
+    for m in mission_list:
+        if m.get("parts"):
+            parts = [by_mid[p] for p in m["parts"] if p in by_mid]
+            m["theorems"] = sorted({x for p in parts for x in p["theorems"]})
+            m["contributors"] = sorted({c for p in parts for c in p["contributors"]})
+            m["completed"] = bool(m["theorems"]) and all(p["completed"] for p in parts if p.get("status") == "ready")
+            m["updated"] = max([m["updated"]] + [p["updated"] for p in parts])
 
     users: dict[str, dict] = {}
 

@@ -441,3 +441,10 @@ details.install-opt ol { padding-left: 20px; margin: 6px 0; display: grid; gap: 
 .pst-done { background: #dcfce7; color: #166534; }
 .pst-rejected, .pst-uploadFailed { background: #fee2e2; color: #991b1b; }
 .pst-waitingFile, .pst-queued, .pst-working, .pst-next { background: #fef3c7; color: #92400e; }
+/* Books split into parts */
+.pst-part-ready { background: #dcfce7; color: #166534; }
+.pst-part-preparing { background: #fef3c7; color: #92400e; }
+.pst-part-empty { background: var(--border); color: var(--muted); }
+.pst-part-failed { background: #fee2e2; color: #991b1b; }
+.part-banner.part-preparing { border-left: 3px solid #f59e0b; }
+.part-banner.part-empty, .part-banner.part-failed { border-left: 3px solid #ef4444; }

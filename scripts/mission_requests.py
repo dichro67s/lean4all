@@ -7,10 +7,11 @@ Proposals come from the site's "Launch a mission" page (signed-in visitors) or f
   2. checks the mission id, the fields, and the goal statement against the theorem-card rules,
   3. compiles the statement against Mathlib,
   4. writes missions/<id>.yaml (reviewed: false) and theorems/T####.yaml.
-If the proposal comes with a source file (a textbook or paper attached to the issue), the file's
-type is checked and the arXiv pipeline (scripts/arxiv_blueprint.py) reads it instead: it extracts
-the results, writes shared definitions and statements, and publishes a blueprint and mission.
-The Lean goal statement is then optional. See scripts/source_files.py.
+If the proposal comes with a source (files attached to the issue, or a link), its type is checked
+and its mission pages are published at once, marked "preparing": one mission per 5 pages plus one
+for the whole source. `--work` then fills them in one part at a time in the background with the
+arXiv pipeline (scripts/arxiv_blueprint.py): results, shared definitions, Lean statements and a
+blueprint. The Lean goal statement is then optional. See scripts/source_files.py.
 scripts/informal-bot.sh commits the result with "closes #N", which closes the issue.
 A proposal is tried at most twice. If LEAN4ALL_BOT_TOKEN is set, failures are explained in a
 comment on the issue.
@@ -150,77 +151,216 @@ def source_url(f: dict) -> str:
     return f.get("source url", "").strip()
 
 
-def build_from_source(iss: dict, links: list[str] | None = None) -> tuple[str, str]:
-    """Read the attached files, or the linked file/arXiv paper, and run the blueprint pipeline.
-    Returns (mission id, goal or '')."""
+# ----------------------------------------------------------------------------------------------
+# Proposals with a source: publish the mission pages at once, fill them in later
+# ----------------------------------------------------------------------------------------------
+# A source (attached files or a link) is split into parts of PART_PAGES pages. Right away, one
+# "preparing" mission per part is published (plus a mission for the whole that lists the parts),
+# and each part becomes a job. `--work` then takes one job at a time: it reads those pages, writes
+# the blueprint and Lean statements, and turns the part's mission into a real one.
+
+PART_PAGES = 5
+MAX_BOOK_PAGES = 300
+SOURCES = Path(os.environ.get("LEAN4ALL_SOURCES", Path.home() / ".local/share/lean4all-sources"))
+JOBS = STATE.parent / "lean4all-jobs.json"
+dump_yaml = lambda d: yaml.safe_dump(d, sort_keys=False, allow_unicode=True, width=100)  # noqa: E731
+
+
+def load_jobs() -> list[dict]:
+    return json.loads(JOBS.read_text()) if JOBS.exists() else []
+
+
+def save_jobs(jobs: list[dict]) -> None:
+    JOBS.parent.mkdir(parents=True, exist_ok=True)
+    JOBS.write_text(json.dumps(jobs, indent=1))
+
+
+def common_fields(iss: dict) -> tuple[dict, str, str, str]:
+    """Checks shared by every proposal with a source. Returns (fields, mission id, captain, title)."""
     import arxiv_blueprint as B
     f = fields(iss.get("body") or "")
     for k, n in LIMITS.items():
         if len(f.get(k, "")) > n:
             raise ValueError(f"`{k}` is longer than {n} characters.")
     mid, login = f.get("mission id", "").strip(), iss["user"]["login"]
-    if not L.MISSION_RE.match(mid) or len(mid) > 80:
-        raise ValueError("The mission ID must use lowercase letters, digits and dashes.")
-    if (L.MISSIONS / f"{mid}.yaml").exists() or (B.BLUEPRINTS / mid).exists():
+    if not L.MISSION_RE.match(mid) or len(mid) > 60:
+        raise ValueError("The mission ID must use lowercase letters, digits and dashes (at most 60).")
+    taken = lambda x: (L.MISSIONS / f"{x}.yaml").exists() or (B.BLUEPRINTS / x).exists() \
+        or any(j["mission"] == x or j.get("parent") == x for j in load_jobs())  # noqa: E731
+    if taken(mid):
         raise ValueError(f"A mission called `{mid}` already exists. Please file a new proposal with another ID.")
     title = f.get("title", "")
     if not title:
         raise ValueError("A title is required.")
+    return f, mid, login, title
+
+
+def prepare_source(iss: dict, links: list[str] | None = None) -> tuple[str, list[str]]:
+    """Publish 'preparing' missions for the source and queue a job per part. Returns (mission id, part ids)."""
+    import arxiv_blueprint as B
+    f, mid, login, title = common_fields(iss)
+    num = iss["number"]
     url = "" if links else source_url(f)
+    mtype = f.get("type") if f.get("type") in TYPES else "Textbook"
+    tags = [t.strip() for t in f.get("tags", "").split(",") if t.strip()][:8] or ["Mathematics"]
     stitle = f.get("source title") or title
-    meta = {"arxiv": None, "title": title, "authors": [], "abstract": f.get("summary", ""), "categories": [],
-            "url": f.get("source url") or iss["html_url"], "published": "", "slug": mid, "module": module_for(mid),
-            "label": stitle + (f", pp. {f['pages']}" if f.get("pages") else ""),
-            "type": f.get("type") if f.get("type") in TYPES else "Textbook",
-            "tags": [t.strip() for t in f.get("tags", "").split(",") if t.strip()][:8]}
+    src_url = f.get("source url") or iss["html_url"]
+    hint = "\n".join(x for x in (f.get("goal description", ""), f.get("goal statement (lean)", "")) if x)
+    base = {"type": mtype, "tags": tags, "captain": login, "reviewed": False}
+    job = {"issue": num, "captain": login, "title": title, "stitle": stitle, "url": src_url, "type": mtype,
+           "tags": [] if tags == ["Mathematics"] else tags, "summary": f.get("summary", ""), "hint": hint, "tries": 0}
+
     aid = None
     if url and re.search(r"arxiv\.org/|^(arxiv:)?\s*\d{4}\.\d{4,5}", url, re.I):
         try:
             aid = B.parse_id(url)
         except ValueError:
             aid = None
-    if aid:   # an arXiv paper: its LaTeX source and metadata, as on the arXiv page
-        print(f"issue #{iss['number']}: arXiv:{aid}")
-        am = B.fetch_meta(aid)
-        meta.update({k: am[k] for k in ("arxiv", "authors", "categories", "published", "url")},
-                    abstract=f.get("summary") or am["abstract"], label=am["label"],
-                    tags=meta["tags"] or am["tags"], type=f.get("type") if f.get("type") in TYPES else "Research Paper")
-        with tempfile.TemporaryDirectory() as tmp:
-            kind, text = B.download_source(aid, Path(tmp))
+    if aid:   # a paper: one part, read from arXiv when its turn comes
+        B.fetch_meta(aid)   # fails now (not hours later) if the id doesn't exist
+        chunks, offset, folder = [None], 0, None
     else:
-        if links:
-            print(f"issue #{iss['number']}: reading {len(links)} attached file(s)")
-            files = [S.download(u) for u in links]
+        files = [S.download(u) for u in links] if links else [S.fetch_url(url)]
+        parts = S.collect(files)                      # checks every file's real type
+        total = S.page_count(parts)
+        folder = SOURCES / f"{mid}-{num}"
+        shutil.rmtree(folder, ignore_errors=True)
+        folder.mkdir(parents=True)
+        for i, (name, _, data) in enumerate(parts):
+            (folder / f"{i:03d}-{Path(name).name}").write_bytes(data)
+        cut = re.search(r"already cut by the site to pages (\d+)", f.get("source file", ""), re.I)
+        if total is None:                             # LaTeX or page photos: one part
+            chunks, offset = [None], 0
         else:
-            print(f"issue #{iss['number']}: downloading {url}")
-            files = [S.fetch_url(url)]
-        parts = S.collect(files)
-        cut = "already cut by the site" in f.get("source file", "").lower()   # the files hold just the chosen pages
-        kind, text = S.read(parts, "" if cut else f.get("pages", ""), log=print)
-    if len(re.sub(r"\s", "", text)) < 100:
-        raise S.SourceError("No text could be read from the source.")
-    print(f"  {kind}: {len(text):,} characters")
-    hint = "\n".join(x for x in (f.get("goal description", ""), f.get("goal statement (lean)", "")) if x)
+            offset = int(cut.group(1)) - 1 if cut else 0
+            a, b = (1, total) if cut or not f.get("pages") else S.parse_pages(f["pages"], total, MAX_BOOK_PAGES)
+            if b - a + 1 > MAX_BOOK_PAGES:
+                raise S.SourceError(f"The source has {b - a + 1} pages; at most {MAX_BOOK_PAGES} can be queued at "
+                                    "once. Give a page range.")
+            chunks = [(s, min(s + PART_PAGES - 1, b)) for s in range(a, b + 1, PART_PAGES)]
+
+    def pages_of(c):   # page numbers of the original document
+        return f"{c[0] + offset}-{c[1] + offset}" if c else ""
+    single = len(chunks) == 1
+    ids = [mid] if single else [f"{mid}-p{c[0] + offset}-{c[1] + offset}" for c in chunks]
+    jobs = load_jobs()
+    written = []
     try:
-        B.run_source(meta, kind, text, login, iss["number"], print, hint=hint)
-    except RuntimeError as e:
-        if "no theorem-like" in str(e):
-            raise S.SourceError("No theorems, lemmas or definitions were found in the chosen pages.") from e
+        for pid, c in zip(ids, chunks):
+            pg = pages_of(c)
+            m = {"id": pid, "title": title if single else f"{title} (pp. {pg})",
+                 "title_ko": None if single else f"{title} ({pg}쪽)", **base,
+                 "summary": (f"Pages {pg} of {stitle}. " if pg else f"{stitle}. ") +
+                            "Being prepared: the server is reading the source and writing a blueprint and "
+                            "Lean statements for it.",
+                 "summary_ko": (f"{stitle}의 {pg}쪽. " if pg else f"{stitle}. ") +
+                               "준비 중: 서버가 자료를 읽고 블루프린트와 Lean 명제를 쓰고 있습니다.",
+                 "status": "preparing", "part_of": None if single else mid, "pages": pg or None,
+                 "source": {"title": f"{stitle}, pp. {pg}" if pg else stitle, "url": src_url}}
+            (L.MISSIONS / f"{pid}.yaml").write_text(dump_yaml({k: v for k, v in m.items() if v is not None}), encoding="utf-8")
+            written.append(pid)
+            jobs.append({**job, "mission": pid, "parent": None if single else mid, "dir": str(folder) if folder else None,
+                         "pages": f"{c[0]}-{c[1]}" if c else "", "orig": pg, "arxiv": aid})
+        if not single:
+            span = f"{pages_of(chunks[0]).split('-')[0]}-{pages_of(chunks[-1]).split('-')[1]}"
+            whole = {"id": mid, "title": title, **base,
+                     "summary": f"{stitle}, pages {span}, in {len(ids)} parts of {PART_PAGES} pages.",
+                     "summary_ko": f"{stitle}, {span}쪽을 {PART_PAGES}쪽씩 {len(ids)}부분으로 나눈 미션입니다.",
+                     "status": "series", "parts": ids, "pages": span,
+                     "source": {"title": stitle, "url": src_url}}
+            (L.MISSIONS / f"{mid}.yaml").write_text(dump_yaml(whole), encoding="utf-8")
+            written.append(mid)
+        _, merrs = L.load_missions()
+        bad = {k: v for k, v in merrs.items() if k in written and v}
+        if bad:
+            raise ValueError("The mission files are invalid: " + json.dumps(bad))
+    except Exception:
+        for pid in written:
+            (L.MISSIONS / f"{pid}.yaml").unlink(missing_ok=True)
+        if folder:
+            shutil.rmtree(folder, ignore_errors=True)
         raise
-    made = [p for p in L.THEOREMS.glob("T*.yaml") if (yaml.safe_load(p.read_text()) or {}).get("mission") == mid]
-    if not (L.MISSIONS / f"{mid}.yaml").exists() or not made:
-        # A mission without a single Lean statement isn't a success: publish nothing and say so.
-        n = len(json.loads((B.BLUEPRINTS / mid / "blueprint.json").read_text()).get("items", [])) \
-            if (B.BLUEPRINTS / mid / "blueprint.json").exists() else 0
-        for q in made:
-            q.unlink()
-        (L.MISSIONS / f"{mid}.yaml").unlink(missing_ok=True)
-        (L.DEFINITIONS / f"{meta['module']}.lean").unlink(missing_ok=True)
-        shutil.rmtree(B.BLUEPRINTS / mid, ignore_errors=True)
-        raise S.SourceError(f"The server found {n} results in the source but could not write a Lean statement "
-                            "that compiles for any of them, so no mission was published. Try other pages, or "
-                            "add a Lean goal statement yourself.")
-    return mid, yaml.safe_load((L.MISSIONS / f"{mid}.yaml").read_text()).get("goal") or ""
+    save_jobs(jobs)
+    return mid, ids
+
+
+def work_one(log=print) -> str | None:
+    """Fill in the oldest queued part. Returns a commit message, or None if there was nothing to do."""
+    import arxiv_blueprint as B
+    jobs = load_jobs()
+    if not jobs:
+        return None
+    job = jobs[0]
+    mid = job["mission"]
+    path = L.MISSIONS / f"{mid}.yaml"
+    if not path.exists():   # removed meanwhile (e.g. by a moderator): drop the job
+        save_jobs(jobs[1:])
+        return None
+    prepared = yaml.safe_load(path.read_text())
+    log(f"part {mid} (issue #{job['issue']}, pages {job['orig'] or 'all'}): reading")
+    meta = {"arxiv": None, "title": prepared["title"], "authors": [], "abstract": job["summary"], "categories": [],
+            "url": job["url"], "published": "", "slug": mid, "module": module_for(mid),
+            "label": job["stitle"] + (f", pp. {job['orig']}" if job["orig"] else ""),
+            "type": job["type"], "tags": job["tags"]}
+    status, note = "ready", ""
+    try:
+        if job.get("arxiv"):
+            am = B.fetch_meta(job["arxiv"])
+            meta.update({k: am[k] for k in ("arxiv", "authors", "categories", "published", "url")},
+                        abstract=job["summary"] or am["abstract"], label=am["label"], tags=job["tags"] or am["tags"])
+            with tempfile.TemporaryDirectory() as tmp:
+                kind, text = B.download_source(job["arxiv"], Path(tmp))
+        else:
+            files = [(p.name.split("-", 1)[1], p.read_bytes()) for p in sorted(Path(job["dir"]).iterdir())]
+            kind, text = S.read(S.collect(files), job["pages"], log=log)
+        if len(re.sub(r"\s", "", text)) < 100:
+            raise S.SourceError("no text could be read from these pages")
+        log(f"  {kind}: {len(text):,} characters")
+        path.unlink()   # run_source writes the real mission file
+        try:
+            B.run_source(meta, kind, text, job["captain"], job["issue"], log, hint=job["hint"])
+        except RuntimeError as e:
+            if "no theorem-like" not in str(e):
+                raise
+            status, note = "empty", "No theorems, lemmas or definitions were found on these pages."
+    except S.SourceError as e:
+        status, note = "failed", str(e)
+    except Exception as e:  # noqa: BLE001  model or Lean trouble: try once more later
+        if not path.exists():
+            path.write_text(dump_yaml(prepared), encoding="utf-8")
+        job["tries"] = job.get("tries", 0) + 1
+        log(f"  failed ({type(e).__name__}: {e}); try {job['tries']} of 2")
+        if job["tries"] < 2:
+            save_jobs(jobs[1:] + [job])   # to the back of the queue
+            return None
+        status, note = "failed", f"The server ran into an error twice ({type(e).__name__})."
+    made = sorted(p.stem for p in L.THEOREMS.glob("T*.yaml") if (yaml.safe_load(p.read_text()) or {}).get("mission") == mid)
+    if status == "ready" and not made:
+        status, note = "empty", "The server could not write a Lean statement that compiles for any result on these pages."
+    m = yaml.safe_load(path.read_text()) if path.exists() and status == "ready" else dict(prepared)
+    m["status"] = status
+    m["title"] = prepared["title"]
+    for k in ("title_ko", "part_of", "pages"):   # keep the part's own title and place in the source
+        if prepared.get(k):
+            m[k] = prepared[k]
+    if status != "ready" and (B.BLUEPRINTS / mid / "blueprint.json").exists():
+        m["blueprint"] = mid   # what was extracted is still worth seeing
+    if status != "ready":
+        m.pop("goal", None)
+        m["summary"] = prepared["summary"].split(" Being prepared")[0] + " " + note
+        m["summary_ko"] = prepared.get("summary_ko", "").split(" 준비 중")[0] + " " + {
+            "empty": "이 부분에서는 Lean 명제를 만들지 못했습니다.",
+            "failed": "이 부분을 처리하지 못했습니다."}[status]
+    path.write_text(dump_yaml(m), encoding="utf-8")
+    log(f"  {mid}: {status}, {len(made)} statement(s)")
+    rest = jobs[1:]
+    if job.get("dir") and not any(j.get("dir") == job["dir"] for j in rest):
+        shutil.rmtree(job["dir"], ignore_errors=True)
+    save_jobs(rest)
+    left = sum(1 for j in rest if j["issue"] == job["issue"])
+    return (f"Mission {mid}: {len(made)} Lean statement(s)" + ("" if status == "ready" else f" ({status})") + "\n\n"
+            f"Filled in from {meta['label']} (issue #{job['issue']}); {left} part(s) of this source still queued.\n"
+            + (f"{note}\n" if note else ""))
 
 
 def comment(num: int, text: str) -> None:
@@ -235,7 +375,7 @@ def comment(num: int, text: str) -> None:
 def main() -> int:
     state = json.loads(STATE.read_text()) if STATE.exists() else {}
     issues = api(f"/repos/{REPO}/issues?state=open&per_page=50&sort=created&direction=asc")   # first come, first served
-    done, lines, file_runs = [], [], 0
+    done, lines = [], []
     for iss in issues:
         if "pull_request" in iss or not iss["title"].lower().startswith("[mission]"):
             continue
@@ -246,16 +386,12 @@ def main() -> int:
         links, f = [], fields(iss.get("body") or "")
         url = source_url(f)
         if url:
-            if file_runs >= 1:
-                continue                    # reading a book is slow: one per run
             links = [url]                   # remembered like attachments, so an edited link is tried again
             if state.get(f"{num}:links") == links:
                 continue
             if tries >= 99:
                 tries = 0
         elif f.get("source file"):
-            if file_runs >= 1:
-                continue                    # reading a book is slow: one per run
             links = S.attachment_links(iss, api(f"/repos/{REPO}/issues/{num}/comments?per_page=100"),
                                        REPO.split("/")[0])
             if not links:                   # the file hasn't been attached yet; check again next run
@@ -278,15 +414,14 @@ def main() -> int:
         STATE.write_text(json.dumps(state))
         try:
             if links:
-                file_runs += 1
-                if TOKEN and not state.get(f"{num}:started"):
-                    comment(num, "Lean4All has started on this source. It reads the pages, finds the theorems and "
-                                 "writes Lean statements for them. This usually takes 30 minutes to 2 hours; a "
-                                 "scanned PDF takes several hours (every page is read as a picture first). This "
-                                 "issue closes itself when the mission is published.")
-                    state[f"{num}:started"] = 1
-                    STATE.write_text(json.dumps(state))
-                mid, tid = build_from_source(iss, None if url else links)
+                mid, part_ids = prepare_source(iss, None if url else links)
+                tid = ""
+                n = len(part_ids)
+                comment(num, f"Lean4All published the mission `{mid}`"
+                             + (f" in {n} parts of {PART_PAGES} pages" if n > 1 else "") + ". "
+                             "Its pages are marked \"preparing\" for now: the server fills them in one part at a "
+                             "time in the background (each part usually takes 5 to 15 minutes, longer for a scan). "
+                             "Follow it on the mission page; this issue is done.")
             else:
                 mid, tid = build(iss)
         except S.SourceError as e:
@@ -324,11 +459,18 @@ def main() -> int:
         lines.append((mid, tid, num, iss["user"]["login"], uid))
     if lines:
         msg = "Mission proposals: " + ", ".join(m for m, *_ in lines)
-        body = "\n".join(f"{m} (goal {t or 'from the attached source'}), proposed by @{u} (closes #{n})" for m, t, n, u, _ in lines)
+        body = "\n".join(f"{m} (goal {t or 'being prepared from the source'}), proposed by @{u} (closes #{n})" for m, t, n, u, _ in lines)
         trailers = "\n".join(sorted({f"Co-authored-by: {u} <{i}+{u}@users.noreply.github.com>" for *_, u, i in lines}))
         (L.BUILD / "mission-commit-message.txt").write_text(f"{msg}\n\n{body}\n\n{trailers}\n")
     return 0
 
 
+def work_main() -> int:
+    msg = work_one()
+    if msg:
+        (L.BUILD / "part-commit-message.txt").write_text(msg)
+    return 0
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(work_main() if "--work" in sys.argv else main())

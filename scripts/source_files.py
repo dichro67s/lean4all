@@ -232,12 +232,12 @@ def collect(files: list[tuple[str, bytes]]) -> list[tuple[str, str, bytes]]:
 # Reading text
 # ----------------------------------------------------------------------------------------------
 
-def parse_pages(spec: str, total: int) -> tuple[int, int]:
+def parse_pages(spec: str, total: int, limit: int = MAX_PAGES) -> tuple[int, int]:
     """'12-30' / '12' / '' -> (first, last), 1-based and inclusive, checked against the length."""
     spec = (spec or "").strip().replace("–", "-").replace("~", "-")
     if not spec:
-        if total > MAX_PAGES:
-            raise SourceError(f"The file has {total} pages. Please give a page range of at most {MAX_PAGES} pages "
+        if total > limit:
+            raise SourceError(f"The file has {total} pages. Please give a page range of at most {limit} pages "
                               "(e.g. `45-80`).")
         return 1, total
     m = re.fullmatch(r"(\d+)\s*(?:-\s*(\d+))?", spec)
@@ -249,8 +249,8 @@ def parse_pages(spec: str, total: int) -> tuple[int, int]:
     if a > total:
         raise SourceError(f"The file has only {total} pages.")
     b = min(b, total)
-    if b - a + 1 > MAX_PAGES:
-        raise SourceError(f"Please choose at most {MAX_PAGES} pages (you asked for {b - a + 1}).")
+    if b - a + 1 > limit:
+        raise SourceError(f"Please choose at most {limit} pages (you asked for {b - a + 1}).")
     return a, b
 
 
@@ -349,6 +349,31 @@ def read_tex(parts: list[tuple[str, str, bytes]], work: Path) -> tuple[str, str]
         return "file-latex", "\n\n".join(p.read_text(encoding="utf-8", errors="replace")
                                         for p in sorted(src.rglob("*.tex")))
     return "file-latex", flatten(main, src)
+
+
+def page_count(parts: list[tuple[str, str, bytes]]) -> int | None:
+    """Pages in a collected PDF (all parts together) or DjVu; None for LaTeX and images."""
+    kind = parts[0][1]
+    if kind not in ("pdf", "djvu"):
+        return None
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp)
+        if kind == "djvu":
+            (work / "s.djvu").write_bytes(parts[0][2])
+            n = subprocess.run([need("djvused", "DjVu"), "-e", "n", str(work / "s.djvu")],
+                               capture_output=True, text=True, timeout=60).stdout.strip()
+            if not n.isdigit():
+                raise SourceError("The DjVu file could not be opened.")
+            return int(n)
+        total = 0
+        for i, (_, _, data) in enumerate(parts):
+            (work / f"{i}.pdf").write_bytes(data)
+            info = subprocess.run(["pdfinfo", str(work / f"{i}.pdf")], capture_output=True, text=True, timeout=60)
+            m = re.search(r"^Pages:\s+(\d+)", info.stdout, re.M)
+            if info.returncode != 0 or not m:
+                raise SourceError("The PDF could not be opened (damaged or password-protected).")
+            total += int(m.group(1))
+        return total
 
 
 def read(parts: list[tuple[str, str, bytes]], pages: str = "", log=print) -> tuple[str, str]:

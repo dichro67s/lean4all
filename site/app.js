@@ -125,11 +125,21 @@
   };
   const tags = (list) => `<div class="tags">${(list || []).map((x) => `<span class="tag">${esc(x)}</span>`).join("")}</div>`;
 
+  // A book split into parts: one mission for the whole (status "series") and one per part.
+  const partsOf = (m) => (m.parts || []).map((id) => MI[id]).filter(Boolean);
+  const partChip = (p) => `<span class="pst pst-part-${esc(p.status || "ready")}">${t(`part.st.${p.status || "ready"}`)}</span>`;
+  function seriesLine(m) {
+    const ps = partsOf(m), ready = ps.filter((p) => (p.status || "ready") === "ready").length;
+    const waiting = ps.filter((p) => p.status === "preparing").length;
+    return t("part.count", ps.length, ready, waiting);
+  }
+
   function missionCard(m) {
     const pr = progressOf(m);
     return `<a class="card mcard" href="#/missions/${m.id}">
-      <div class="row"><span class="label">${esc(typeName(m.type))}</span><span class="spacer"></span>${m.completed ? chip(m.goal_status) : ""}</div>
+      <div class="row"><span class="label">${esc(typeName(m.type))}</span><span class="spacer"></span>${m.completed ? chip(m.goal_status) : m.status === "preparing" ? partChip(m) : ""}</div>
       <h3>${esc(loc(m, "title"))}</h3>
+      ${m.parts ? `<p class="small muted" style="margin:0">${seriesLine(m)}</p>` : ""}
       <p>${md(loc(m, "summary"), true)}</p>
       ${tags(m.tags)}
       ${bar(pr)}
@@ -173,8 +183,9 @@
   // ---------- views ------------------------------------------------------------------------
   function viewHome() {
     const s = D.stats;
-    const active = D.missions.filter((m) => !m.completed).sort((a, b) => b.updated.localeCompare(a.updated));
-    const finished = D.missions.filter((m) => m.completed);
+    const shown = D.missions.filter((m) => !m.part_of);   // parts are listed on their book's page
+    const active = shown.filter((m) => !m.completed).sort((a, b) => b.updated.localeCompare(a.updated));
+    const finished = shown.filter((m) => m.completed);
     return `
       <section class="hero">
         <div class="label">${t("home.kicker")}</div>
@@ -215,7 +226,7 @@
   function viewMissions(q) {
     const tab = q.get("tab") || "open", term = (q.get("q") || "").toLowerCase();
     const tag = q.get("tag") || "", sort = q.get("sort") || "hot";
-    const all = D.missions;
+    const all = D.missions.filter((m) => !m.part_of);   // parts are listed on their book's page
     const counts = { open: all.filter((m) => !m.completed).length, completed: all.filter((m) => m.completed).length, all: all.length };
     let list = all.filter((m) => tab === "all" || (tab === "open" ? !m.completed : m.completed));
     if (tag) list = list.filter((m) => (m.tags || []).includes(tag));
@@ -312,9 +323,10 @@
     const m = MI[id];
     if (!m) return notFound();
     const pr = progressOf(m), goal = TH[m.goal];
+    const bare = !!m.parts || ["preparing", "empty", "failed"].includes(m.status);   // nothing formal here yet
     const src = m.source ? (m.source.url ? `<a href="${esc(m.source.url)}">${esc(m.source.title || m.source.url)}</a>` : esc(m.source.title)) : "—";
     return `
-      <div class="crumbs"><a href="#/missions">${t("nav.missions")}</a> / ${esc(m.id)}</div>
+      <div class="crumbs"><a href="#/missions">${t("nav.missions")}</a> / ${m.part_of && MI[m.part_of] ? `<a href="#/missions/${esc(m.part_of)}">${esc(loc(MI[m.part_of], "title"))}</a> / ` : ""}${esc(m.id)}</div>
       <div class="detail-head">
         <div class="row"><span class="label">${esc(typeName(m.type))}</span>${m.reviewed ? `<span class="badge-reviewed">${t("reviewed")}</span>` : ""}</div>
         <h1>${esc(loc(m, "title"))}</h1>
@@ -327,21 +339,27 @@
               <span class="spacer"></span>${goal ? `${t("m.goal")}: ${chip(goal.status)}` : ""}</div>
             <div style="margin-top:10px">${bar(pr)}</div>
           </div>
+          ${["preparing", "empty", "failed"].includes(m.status) ? `<div class="card pad part-banner part-${m.status}" style="margin-top:16px">
+              <b>${t(`part.st.${m.status}`)}</b><p class="small" style="margin:6px 0 0">${t(`part.d.${m.status}`)}</p></div>` : ""}
+          ${m.parts ? `<h2>${t("part.title")}</h2><p class="small muted">${seriesLine(m)} · ${t("part.d.series")}</p>
+            <div class="card pad"><ul class="pst-list">${partsOf(m).map((p) => `<li><div>${partChip(p)}
+              <a href="#/missions/${esc(p.id)}"><b>${esc(t("part.pages", p.pages || ""))}</b></a>
+              <span class="muted small">· ${t("theorems", p.theorems.length)}</span></div></li>`).join("")}</ul></div>` : ""}
           ${m.blueprint ? `<div class="card pad bp-link row" style="margin-top:16px"><div><b>${t("m.bp.t")}</b><div class="small muted">${t("m.bp.d")}</div></div><span class="spacer"></span><a class="btn btn-primary btn-sm" href="#/blueprints/${m.blueprint}">${t("m.bp.b")}</a></div>` : ""}
           <div class="prose" style="margin-top:20px">${md(loc(m, "description") || loc(m, "summary"))}</div>
-          <h2>${t("m.milestones")}</h2>
+          ${bare && !(m.milestones || []).length ? "" : `<h2>${t("m.milestones")}</h2>
           <div class="card pad"><ol class="milestones">
             ${(m.milestones || []).map((x) => { const th = TH[x.theorem]; return `<li class="${th && done(th.status) ? "done" : ""}">
               <span class="num"></span>
               <div><b>${esc(loc(x, "title"))}</b>${x.theorem === m.goal ? ` <span class="label">· ${t("m.goalTag")}</span>` : ""}<div class="prose">${md(loc(x, "statement"), true)}</div>
                 ${th ? `<div class="small muted">${thmLink(th.id)} · ${esc(loc(th, "title"))}</div>` : `<div class="small muted">${t("m.notFormal")}</div>`}</div>
               <div>${th ? chip(th.status) : ""}</div></li>`; }).join("") || `<li class="muted">${t("m.noMilestones")}</li>`}
-          </ol></div>
-          <h2>${t("m.graph")}</h2>
+          </ol></div>`}
+          ${bare && !m.theorems.length ? "" : `<h2>${t("m.graph")}</h2>
           <p class="muted small">${t("m.graphHelp")}</p>
           <div class="card graph">${dagSvg(m.theorems)}</div>
           <h2>${t("m.all")}</h2>
-          <div class="card">${theoremTable(m.theorems)}</div>
+          <div class="card">${theoremTable(m.theorems)}</div>`}
         </div>
         <aside class="side card pad">
           <dl>
@@ -717,7 +735,7 @@
   }
 
   const SRC_MAX_RAW = 200;          // MB we're willing to read in the browser
-  const SRC_MAX_PAGES = 60;         // pages the server reads (scripts/source_files.py)
+  const SRC_MAX_PAGES = 300;        // pages one proposal may queue (MAX_BOOK_PAGES in scripts/mission_requests.py)
   let srcUploads = [];              // files the site made ({blob, name}); attach these instead of the originals
   let srcCut = "";                  // page range the site already cut the PDF to
   let srcInput = null, srcRun = 0, srcBusy = false, srcScan = false;
@@ -1629,6 +1647,18 @@
       document.getElementById("axsubmit")?.addEventListener("submit", submitArxiv);
     }
     if (page === "me") loadMe();
+    // A mission still being prepared: check for a new build every 2 minutes and reload when it lands.
+    clearInterval(window.l4aWatch);
+    const mid = decodeURIComponent((location.hash.split("?")[0].split("/")[2]) || "");
+    const mm = page === "missions" && MI[mid];
+    if (mm && (mm.status === "preparing" || partsOf(mm).some((p) => p.status === "preparing"))) {
+      window.l4aWatch = setInterval(async () => {
+        try {
+          const d = await (await fetch("data.json", { cache: "no-cache" })).json();
+          if (d.generated !== D.generated) location.reload();
+        } catch {}
+      }, 120000);
+    }
     if (page === "propose") {
       document.getElementById("pform").addEventListener("input", (e) => { if (e.target.id !== "pfile") proposeOutput(); }); proposeOutput();
       srcFiles = [];
