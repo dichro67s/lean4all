@@ -47,6 +47,30 @@
   const done = (s) => s === "proved" || s === "disproved";
   const ghUrl = (path = "") => `https://github.com/${D.repo}${path}`;
   const siteBase = () => location.origin + location.pathname.replace(/index\.html$/, "");
+  // ---- sharing: share/<kind>/<id>[.ko].html carries the link preview (built by lean4all.py site)
+  const shareUrl = (kind, id) => `${siteBase()}share/${kind ? `${kind}/${id}` : "home"}${LANG === "ko" ? ".ko" : ""}.html`;
+  const shareBtn = (kind, id, text) =>
+    `<span class="share"><button type="button" class="btn btn-sm share-btn" data-share="${kind}|${esc(id)}" data-text="${esc(text)}">${t("share.btn")}</button></span>`;
+  function openShare(btn) {
+    document.querySelectorAll(".share-pop").forEach((p) => p.remove());
+    const [kind, id] = btn.dataset.share.split("|"), url = shareUrl(kind, id), text = btn.dataset.text;
+    if (navigator.share && matchMedia("(pointer: coarse)").matches) {   // phones: the system sheet (KakaoTalk, messages, ...)
+      navigator.share({ title: text, text, url }).catch(() => {});
+      return;
+    }
+    const u = encodeURIComponent(url), tx = encodeURIComponent(text);
+    const links = [
+      ["Facebook", `https://www.facebook.com/sharer/sharer.php?u=${u}`],
+      ["X", `https://twitter.com/intent/tweet?text=${tx}&url=${u}`],
+      ["LinkedIn", `https://www.linkedin.com/sharing/share-offsite/?url=${u}`],
+      ["Threads", `https://www.threads.net/intent/post?text=${encodeURIComponent(text + " " + url)}`],
+    ];
+    const pop = document.createElement("div");
+    pop.className = "share-pop";
+    pop.innerHTML = links.map(([n, href]) => `<a href="${href}" target="_blank" rel="noopener" data-share-out>${n}</a>`).join("")
+      + `<button type="button" data-share-copy="${esc(url)}">${t("share.copy")}</button>`;
+    btn.parentElement.appendChild(pop);
+  }
   const userLink = (u) => (u ? `<a href="#/contributors/${enc(u)}">@${esc(u)}</a>` : "—");
   const avatar = (u) => `<img class="avatar" alt="" loading="lazy" src="https://github.com/${enc(u)}.png?size=56" onerror="this.style.visibility='hidden'">`;
   const thmLink = (id) => `<a class="mono" href="#/theorems/${id}">${id}</a>`;
@@ -191,6 +215,7 @@
         <div class="label">${t("home.kicker")}</div>
         <h1>${t("home.title")}</h1>
         <p class="lead">${t("home.lead")}</p>
+        <div class="row" style="margin:-6px 0 18px">${shareBtn("", "", t("share.home"))}</div>
         <div class="grid grid-cta">
           <a class="card cta" href="#/start"><div class="ico">⚡</div><h3>${t("home.cta1.t")}</h3><p>${t("home.cta1.d")}</p></a>
           <a class="card cta" href="#/propose"><div class="ico">📄</div><h3>${t("home.cta2.t")}</h3><p>${t("home.cta2.d")}</p></a>
@@ -328,7 +353,8 @@
     return `
       <div class="crumbs"><a href="#/missions">${t("nav.missions")}</a> / ${m.part_of && MI[m.part_of] ? `<a href="#/missions/${esc(m.part_of)}">${esc(loc(MI[m.part_of], "title"))}</a> / ` : ""}${esc(m.id)}</div>
       <div class="detail-head">
-        <div class="row"><span class="label">${esc(typeName(m.type))}</span>${m.reviewed ? `<span class="badge-reviewed">${t("reviewed")}</span>` : ""}</div>
+        <div class="row"><span class="label">${esc(typeName(m.type))}</span>${m.reviewed ? `<span class="badge-reviewed">${t("reviewed")}</span>` : ""}
+          <span class="spacer"></span>${shareBtn("m", m.id, t("share.mission", loc(m, "title")))}</div>
         <h1>${esc(loc(m, "title"))}</h1>
         ${tags(m.tags)}
       </div>
@@ -413,7 +439,8 @@
     return `
       <div class="crumbs"><a href="#/library">${t("crumb.library")}</a> / ${th.id}</div>
       <div class="detail-head">
-        <div class="row"><span class="mono muted">${th.id}</span>${chip(th.status)}</div>
+        <div class="row"><span class="mono muted">${th.id}</span>${chip(th.status)}
+          <span class="spacer"></span>${shareBtn("t", th.id, t("share.theorem", th.id, loc(th, "title")))}</div>
         <h1>${esc(loc(th, "title"))}</h1>
         ${tags(th.tags)}
       </div>
@@ -1760,6 +1787,21 @@
       if (el) { el.scrollIntoView({ behavior: "smooth", block: j.dataset.block || "center" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1200); }
       return;
     }
+    const shb = e.target.closest("[data-share]");
+    if (shb) { openShare(shb); return; }
+    const out = e.target.closest("[data-share-out]");
+    if (out) {   // a small window, like the networks' own share buttons
+      e.preventDefault();
+      window.open(out.href, "l4a-share", "popup,width=620,height=560") || window.open(out.href, "_blank");
+      out.closest(".share-pop")?.remove();
+      return;
+    }
+    const sc = e.target.closest("[data-share-copy]");
+    if (sc) {
+      navigator.clipboard?.writeText(sc.dataset.shareCopy).then(() => { sc.textContent = t("copied"); setTimeout(() => sc.closest(".share-pop")?.remove(), 900); });
+      return;
+    }
+    if (!e.target.closest(".share-pop")) document.querySelectorAll(".share-pop").forEach((p) => p.remove());
     const b = e.target.closest("[data-copy]");
     if (!b) return;
     navigator.clipboard?.writeText(b.dataset.copy).then(() => { b.textContent = t("copied"); setTimeout(() => (b.textContent = t("copy")), 1200); });

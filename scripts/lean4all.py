@@ -605,6 +605,76 @@ def repo_slug() -> str:
     return cfg.get("repo", "")
 
 
+def site_url(cfg: dict) -> str:
+    """Public address of the site, e.g. https://dichro67s.github.io/lean4all/."""
+    if cfg.get("site_url"):
+        return cfg["site_url"].rstrip("/") + "/"
+    owner, _, name = repo_slug().partition("/")
+    return f"https://{owner.lower()}.github.io/{name}/"
+
+
+def plain(text: str, n: int = 200) -> str:
+    """Markdown/LaTeX -> short plain text for link previews."""
+    t = re.sub(r"\*\*|__|`|\$", "", text or "")
+    t = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", t)
+    t = re.sub(r"\\(mathfrak|mathbb|mathrm|operatorname|mathcal)\{([^}]*)\}", r"\2", t)
+    t = " ".join(t.split())
+    return t if len(t) <= n else t[: n - 1].rsplit(" ", 1)[0] + "…"
+
+
+def write_share_pages(cfg: dict, missions: list[dict], theorems: list[dict]) -> None:
+    """Link previews. The site's routes live after '#', which link-preview crawlers (Facebook, X,
+    KakaoTalk, ...) never see, so every link would preview as the home page. share/<kind>/<id>.html
+    (and .ko.html) carries that page's title and summary as Open Graph tags and forwards visitors to it.
+    The forward is JavaScript only: crawlers don't run it, but they would follow a canonical link or a
+    meta refresh to the home page and preview that instead."""
+    import html
+    base = site_url(cfg)
+    esc = lambda x: html.escape(x or "", quote=True)  # noqa: E731
+
+    def page(path: str, title: str, desc: str, target: str, lang: str) -> None:
+        url = base + path
+        out = SITE_OUT / path
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(f"""<!doctype html>
+<html lang="{lang}"><head><meta charset="utf-8">
+<title>{esc(title)}</title>
+<meta name="description" content="{esc(desc)}">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Lean4All">
+<meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}">
+<meta property="og:url" content="{esc(url)}"><meta property="og:image" content="{base}og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:locale" content="{'ko_KR' if lang == 'ko' else 'en_US'}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="robots" content="noai, noimageai">
+<script>location.replace({json.dumps(target)})</script>
+</head><body><p><a href="{esc(target)}">{esc(title)}</a></p></body></html>
+""", encoding="utf-8")
+
+    home = {"en": ("Lean4All: prove theorems in Lean 4 with your AI agent",
+                   "Pick a theorem, bring your AI agent. Lean checks every step, and each verified result "
+                   "becomes a building block for the next. Free and open to everyone."),
+            "ko": ("Lean4All: AI 에이전트와 함께 Lean 4로 수학 증명하기",
+                   "정리를 고르고 AI 에이전트에게 맡기세요. Lean이 모든 단계를 검사하고, 검증된 결과는 다음 증명의 "
+                   "재료가 됩니다. 누구나 무료로 참여할 수 있습니다.")}
+    for lang, (t, d) in home.items():
+        sfx = ".ko" if lang == "ko" else ""
+        page(f"share/home{sfx}.html", t, d, base + ("?lang=ko" if lang == "ko" else ""), lang)
+    for m in missions:
+        for lang in ("en", "ko"):
+            sfx, q = (".ko", "?lang=ko") if lang == "ko" else ("", "")
+            title = (m.get("title_ko") if lang == "ko" else None) or m["title"]
+            desc = plain((m.get("summary_ko") if lang == "ko" else None) or m.get("summary") or "")
+            page(f"share/m/{m['id']}{sfx}.html", f"{title} · Lean4All", desc, f"{base}{q}#/missions/{m['id']}", lang)
+    for t in theorems:
+        for lang in ("en", "ko"):
+            sfx, q = (".ko", "?lang=ko") if lang == "ko" else ("", "")
+            title = (t.get("title_ko") if lang == "ko" else None) or t.get("title") or t["id"]
+            desc = plain((t.get("description_ko") if lang == "ko" else None) or t.get("description") or "")
+            page(f"share/t/{t['id']}{sfx}.html", f"{t['id']}: {title} · Lean4All", desc,
+                 f"{base}{q}#/theorems/{t['id']}", lang)
+
+
 def site(lean: bool) -> None:
     results = check(lean=lean)
     cards, _ = load_cards()
@@ -753,6 +823,15 @@ def site(lean: bool) -> None:
     index = (SITE_OUT / "index.html").read_text(encoding="utf-8")
     index = index.replace('href="app.css"', f'href="app.css?v={stamp}"')
     index = index.replace('src="i18n.js"', f'src="i18n.js?v={stamp}"')
+    base = site_url(cfg)
+    og = (f'<meta property="og:type" content="website">\n  <meta property="og:site_name" content="Lean4All">\n'
+          f'  <meta property="og:title" content="Lean4All: prove theorems in Lean 4 with your AI agent">\n'
+          f'  <meta property="og:description" content="Pick a theorem, bring your AI agent. Lean checks every step, and each '
+          f'verified result becomes a building block for the next. Free and open to everyone.">\n'
+          f'  <meta property="og:url" content="{base}">\n  <meta property="og:image" content="{base}og.png">\n'
+          f'  <meta property="og:image:width" content="1200">\n  <meta property="og:image:height" content="630">\n'
+          f'  <meta name="twitter:card" content="summary_large_image">\n  <meta name="robots"')
+    index = index.replace('<meta name="robots"', og, 1)
     (SITE_OUT / "index.html").write_text(index.replace('src="app.js"', f'src="app.js?v={stamp}"'))
     api = SITE_OUT / "api"
     (api / "theorems").mkdir(parents=True)
@@ -776,6 +855,7 @@ def site(lean: bool) -> None:
             shutil.copy(md, SITE_OUT / "blueprints" / bp["id"] / "BLUEPRINT.md")
     for doc in ("start.md", "start.ko.md", "SKILL.md", "CONTRIBUTING.md", "CONTRIBUTING.ko.md"):
         shutil.copy(ROOT / doc, SITE_OUT / doc)
+    write_share_pages(cfg, mission_list, theorems)
     (SITE_OUT / ".nojekyll").write_text("")
     print(f"site written to {SITE_OUT.relative_to(ROOT)}/ — {counts}")
 
