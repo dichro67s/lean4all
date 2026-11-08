@@ -450,9 +450,8 @@ details.install-opt ol { padding-left: 20px; margin: 6px 0; display: grid; gap: 
 .part-banner.part-empty, .part-banner.part-failed { border-left: 3px solid #ef4444; }
 /* Share button and menu */
 .share { position: relative; display: inline-block; }
-.share-pop { position: absolute; z-index: 30; top: calc(100% + 6px); right: 0; min-width: 170px; background: var(--surface, #fff);
+.share-pop { position: fixed; z-index: 1000; min-width: 170px; background: var(--surface, #fff);
   border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 6px; display: grid; }
-.footer .share-pop { top: auto; bottom: calc(100% + 6px); left: 0; right: auto; }
 .share-pop a, .share-pop button { display: block; text-align: left; padding: 8px 10px; border-radius: 6px; color: var(--text);
   background: none; border: 0; font: inherit; cursor: pointer; }
 .share-pop a:hover, .share-pop button:hover { background: var(--surface-2, #f0f0ec); text-decoration: none; }

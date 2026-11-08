@@ -69,8 +69,18 @@
     pop.className = "share-pop";
     pop.innerHTML = links.map(([n, href]) => `<a href="${href}" target="_blank" rel="noopener" data-share-out>${n}</a>`).join("")
       + `<button type="button" data-share-copy="${esc(url)}">${t("share.copy")}</button>`;
-    btn.parentElement.appendChild(pop);
+    // On top of everything (no parent can clip it), placed next to the button and kept on screen.
+    pop.style.visibility = "hidden";
+    document.body.appendChild(pop);
+    const r = btn.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight, gap = 6, m = 8;
+    let left = Math.min(r.left, innerWidth - w - m);
+    left = Math.max(m, left);
+    const below = r.bottom + gap + h <= innerHeight - m || r.top - gap - h < m;
+    pop.style.left = `${left}px`;
+    pop.style.top = `${below ? r.bottom + gap : r.top - gap - h}px`;
+    pop.style.visibility = "";
   }
+  ["scroll", "resize"].forEach((ev) => addEventListener(ev, () => document.querySelectorAll(".share-pop").forEach((p) => p.remove()), { passive: true }));
   const userLink = (u) => (u ? `<a href="#/contributors/${enc(u)}">@${esc(u)}</a>` : "—");
   const avatar = (u) => `<img class="avatar" alt="" loading="lazy" src="https://github.com/${enc(u)}.png?size=56" onerror="this.style.visibility='hidden'">`;
   const thmLink = (id) => `<a class="mono" href="#/theorems/${id}">${id}</a>`;
