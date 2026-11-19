@@ -1,0 +1,23 @@
+{
+  "id": "T0018",
+  "hash": "f963f6fff747fd2e",
+  "model": "Qwen3.8-Flash-Next",
+  "generated": "2026-11-19T02:00:29+00:00",
+  "en": "Let $R$ be a commutative ring. The following statements are equivalent: (1) every ideal of $R$ is finitely generated; (2) every monotone sequence of ideals in $R$ is eventually constant; (3) every nonempty set of ideals in $R$ contains a minimal element with respect to inclusion.",
+  "ko": "$R$을 가환환이라 하자. 다음 명제들은 서로 동치이다: (1) $R$의 모든 아이디얼은 유한 생성이다; (2) $R$의 모든 단조 증가하는 아이디얼 수열은 결국 상수이다; (3) $R$의 모든 공집합이 아닌 아이디얼들의 집합은 포함 관계에 대해 극소원을 가진다.",
+  "caveats_en": [
+    "The sequence $a$ is indexed by $\\mathbb{N}$, which includes $0$.",
+    "The condition $\\forall k, m \\le k \\to a k = a m$ means the sequence is constant from index $m$ onwards.",
+    "The minimality in (3) is with respect to the partial order $\\le$ on ideals, which corresponds to subset inclusion $\\subseteq$."
+  ],
+  "caveats_ko": [
+    "수열 $a$의 인덱스는 $\\mathbb{N}$이며, 이는 $0$을 포함한다.",
+    "조건 $\\forall k, m \\le k \\to a k = a m$은 수열이 인덱스 $m$부터 상수임을 의미한다.",
+    "(3)에서의 극소성은 아이디얼의 부분 순서 $\\le$ (포함 관계 $\\subseteq$)에 대한 것이다."
+  ],
+  "audit": {
+    "verdict": "mismatch",
+    "note_en": "The Lean statement formalizes the equivalence with the Minimal Condition (every nonempty set of ideals has a minimal element), whereas the human description specifies the Maximal Condition (every nonempty set of ideals has a maximal element). While these are equivalent for Noetherian rings, the statements themselves are mathematically distinct (one uses `M ≤ I → I = M` for minimality, the other requires maximality).",
+    "note_ko": "Lean 문장은 '최소 조건'(모든 비어있지 않은 이데알 집합이 포함 관계에 대해 최소 원소를 가짐)을 형식화한 반면, 인간 설명은 '최대 조건'(모든 비어있지 않은 이데알 집합이 최대 원소를 가짐)을 명시하고 있습니다. 두 조건은 논리적으로 동치이지만, 진술 자체는 수학적으로 다릅니다(Lean은 최소성을 나타내는 `M ≤ I → I = M`을 사용함)."
+  }
+}
