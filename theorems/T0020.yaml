@@ -1,0 +1,23 @@
+id: T0020
+title: Generators of the maximal ideal and the cotangent space
+title_ko: 극대 아이디얼의 생성원과 여접공간
+description: |-
+  Let $A$ be a Noetherian local ring with maximal ideal $\mathfrak{m}$ and residue field $k = A/\mathfrak{m}$. Elements $a_1, \dots, a_n$ of $\mathfrak{m}$ generate $\mathfrak{m}$ as an ideal if and only if their residues modulo $\mathfrak{m}^2$ span $\mathfrak{m}/\mathfrak{m}^2$ as a vector space over $k$.
+
+  *Corollary 1.4 in J.S. Milne, Algebraic Geometry, p. 15. The book assumes $A$ is Noetherian (in the sentence just before the corollary). The mission's milestone summary leaves this out, but the statement needs it: in a valuation ring with value group $\mathbb{Q}$ we have $\mathfrak{m} = \mathfrak{m}^2 \neq 0$, so the empty family spans $\mathfrak{m}/\mathfrak{m}^2 = 0$ without generating $\mathfrak{m}$. In Lean $\mathfrak{m}/\mathfrak{m}^2$ is `(maximalIdeal R).Cotangent` (Mathlib's `CotangentSpace R`), $k$ is `ResidueField R`, and `toCotangent` is the residue map $\mathfrak{m} \to \mathfrak{m}/\mathfrak{m}^2$.*
+description_ko: |-
+  $A$를 극대 아이디얼 $\mathfrak{m}$과 잉여체 $k = A/\mathfrak{m}$을 가진 뇌터 국소환이라 하자. $\mathfrak{m}$의 원소 $a_1, \dots, a_n$이 아이디얼로서 $\mathfrak{m}$을 생성할 필요충분조건은, 이들을 $\mathfrak{m}^2$으로 나눈 잉여류가 $\mathfrak{m}/\mathfrak{m}^2$을 $k$-벡터공간으로서 생성하는 것이다.
+
+  *J.S. Milne, Algebraic Geometry, 15쪽의 Corollary 1.4. 책은 따름정리 바로 앞 문장에서 $A$가 뇌터 환이라고 가정한다. 미션의 마일스톤 요약에는 이 가정이 빠져 있지만, 이 가정 없이는 명제가 거짓이다. 값군이 $\mathbb{Q}$인 값매김환에서는 $\mathfrak{m} = \mathfrak{m}^2 \neq 0$이므로, 빈 원소 모임이 $\mathfrak{m}/\mathfrak{m}^2 = 0$을 생성하지만 $\mathfrak{m}$은 생성하지 못한다. Lean에서 $\mathfrak{m}/\mathfrak{m}^2$은 `(maximalIdeal R).Cotangent`(Mathlib의 `CotangentSpace R`), $k$는 `ResidueField R`, `toCotangent`는 잉여 사상 $\mathfrak{m} \to \mathfrak{m}/\mathfrak{m}^2$이다.*
+statement: |-
+  (R : Type*) [CommRing R] [IsLocalRing R] [IsNoetherianRing R] (n : ℕ) (a : Fin n → R)
+      (ha : ∀ i, a i ∈ IsLocalRing.maximalIdeal R) :
+      Ideal.span (Set.range a) = IsLocalRing.maximalIdeal R ↔
+        Submodule.span (IsLocalRing.ResidueField R)
+          (Set.range fun i => (IsLocalRing.maximalIdeal R).toCotangent ⟨a i, ha i⟩) = ⊤
+tags:
+- Mathematics
+- Commutative Algebra
+source: J.S. Milne, Algebraic Geometry, p. 15, Corollary 1.4
+mission: algebraic-geometry
+proposer: Sanghyeok0

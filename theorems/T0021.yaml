@@ -1,0 +1,23 @@
+id: T0021
+title: Minimal number of generators of the maximal ideal
+title_ko: 극대 아이디얼의 최소 생성원 개수
+description: |-
+  Let $A$ be a Noetherian local ring with maximal ideal $\mathfrak{m}$ and residue field $k = A/\mathfrak{m}$. The minimum number of generators of $\mathfrak{m}$ equals $d = \dim_k \mathfrak{m}/\mathfrak{m}^2$: some $d$ elements generate $\mathfrak{m}$, and any $n$ elements that generate $\mathfrak{m}$ satisfy $d \le n$.
+
+  *Corollary 1.4 in J.S. Milne, Algebraic Geometry, p. 15 (the sentence "In particular, the minimum number of generators for the maximal ideal is equal to the dimension of the vector space $\mathfrak{m}/\mathfrak{m}^2$").*
+description_ko: |-
+  $A$를 극대 아이디얼 $\mathfrak{m}$과 잉여체 $k = A/\mathfrak{m}$을 가진 뇌터 국소환이라 하자. $\mathfrak{m}$의 최소 생성원 개수는 $d = \dim_k \mathfrak{m}/\mathfrak{m}^2$이다. 즉 $d$개의 원소로 $\mathfrak{m}$을 생성할 수 있고, $\mathfrak{m}$을 생성하는 $n$개의 원소가 있으면 $d \le n$이다.
+
+  *J.S. Milne, Algebraic Geometry, 15쪽의 Corollary 1.4 중 "특히 극대 아이디얼의 최소 생성원 개수는 벡터공간 $\mathfrak{m}/\mathfrak{m}^2$의 차원과 같다"는 문장.*
+statement: |-
+  (R : Type*) [CommRing R] [IsLocalRing R] [IsNoetherianRing R] :
+      (∃ a : Fin (Module.finrank (IsLocalRing.ResidueField R) (IsLocalRing.CotangentSpace R)) → R,
+          Ideal.span (Set.range a) = IsLocalRing.maximalIdeal R) ∧
+        ∀ (n : ℕ) (a : Fin n → R), Ideal.span (Set.range a) = IsLocalRing.maximalIdeal R →
+          Module.finrank (IsLocalRing.ResidueField R) (IsLocalRing.CotangentSpace R) ≤ n
+tags:
+- Mathematics
+- Commutative Algebra
+source: J.S. Milne, Algebraic Geometry, p. 15, Corollary 1.4
+mission: algebraic-geometry
+proposer: Sanghyeok0

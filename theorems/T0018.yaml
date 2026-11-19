@@ -1,0 +1,29 @@
+id: T0018
+title: Equivalent conditions for a Noetherian ring
+title_ko: 뇌터 환의 동치 조건
+description: |-
+  The following three conditions on a commutative ring $A$ are equivalent:
+  (a) every ideal in $A$ is finitely generated;
+  (b) every ascending chain of ideals $\mathfrak{a}_1 \subseteq \mathfrak{a}_2 \subseteq \cdots$ eventually becomes constant, i.e. $\mathfrak{a}_m = \mathfrak{a}_{m+1} = \cdots$ for some $m$;
+  (c) every nonempty set of ideals in $A$ has a maximal element.
+
+  *Proposition 1.2 in J.S. Milne, Algebraic Geometry, p. 14. A maximal element of $\Sigma$ is an $\mathfrak{c} \in \Sigma$ not properly contained in any other member of $\Sigma$.*
+description_ko: |-
+  가환환 $A$에 대한 다음 세 조건은 동치이다.
+  (a) $A$의 모든 아이디얼은 유한 생성이다.
+  (b) 아이디얼의 모든 상승 사슬 $\mathfrak{a}_1 \subseteq \mathfrak{a}_2 \subseteq \cdots$는 결국 일정해진다. 즉 어떤 $m$에 대해 $\mathfrak{a}_m = \mathfrak{a}_{m+1} = \cdots$이다.
+  (c) $A$의 아이디얼로 이루어진 공집합이 아닌 모든 집합은 극대원을 가진다.
+
+  *J.S. Milne, Algebraic Geometry, 14쪽의 Proposition 1.2. $\Sigma$의 극대원이란 $\Sigma$의 다른 원소에 진부분으로 포함되지 않는 $\mathfrak{c} \in \Sigma$를 말한다.*
+statement: |-
+  (R : Type*) [CommRing R] :
+      List.TFAE
+        [∀ I : Ideal R, I.FG,
+         ∀ a : ℕ → Ideal R, Monotone a → ∃ m, ∀ k, m ≤ k → a k = a m,
+         ∀ S : Set (Ideal R), S.Nonempty → ∃ M ∈ S, ∀ I ∈ S, M ≤ I → I = M]
+tags:
+- Mathematics
+- Commutative Algebra
+source: J.S. Milne, Algebraic Geometry, p. 14, Proposition 1.2
+mission: algebraic-geometry
+proposer: Sanghyeok0

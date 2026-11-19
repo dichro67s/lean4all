@@ -1,0 +1,23 @@
+id: T0017
+title: Chinese Remainder Theorem
+title_ko: 중국인 나머지 정리
+description: |-
+  Let $\mathfrak{a}_1, \dots, \mathfrak{a}_n$ be ideals in a commutative ring $A$. If $\mathfrak{a}_i$ is coprime to $\mathfrak{a}_j$ (that is, $\mathfrak{a}_i + \mathfrak{a}_j = A$) whenever $i \neq j$, then the canonical map $A \to A/\mathfrak{a}_1 \times \cdots \times A/\mathfrak{a}_n$ is surjective, with kernel $\prod \mathfrak{a}_i = \bigcap \mathfrak{a}_i$.
+
+  *Theorem 1.1 in J.S. Milne, Algebraic Geometry, p. 14. In Lean the sum of ideals is `⊔` and the unit ideal $A$ is `⊤`.*
+description_ko: |-
+  $\mathfrak{a}_1, \dots, \mathfrak{a}_n$을 가환환 $A$의 아이디얼이라 하자. $i \neq j$이면 항상 $\mathfrak{a}_i$와 $\mathfrak{a}_j$가 서로소(즉 $\mathfrak{a}_i + \mathfrak{a}_j = A$)일 때, 표준 사상 $A \to A/\mathfrak{a}_1 \times \cdots \times A/\mathfrak{a}_n$은 전사이고 그 핵은 $\prod \mathfrak{a}_i = \bigcap \mathfrak{a}_i$이다.
+
+  *J.S. Milne, Algebraic Geometry, 14쪽의 Theorem 1.1. Lean에서 아이디얼의 합은 `⊔`, 단위 아이디얼 $A$는 `⊤`로 나타낸다.*
+statement: |-
+  (R : Type*) [CommRing R] (n : ℕ) (I : Fin n → Ideal R)
+      (hI : ∀ i j, i ≠ j → I i ⊔ I j = ⊤) :
+      Function.Surjective (RingHom.pi fun i => Ideal.Quotient.mk (I i)) ∧
+        RingHom.ker (RingHom.pi fun i => Ideal.Quotient.mk (I i)) = ∏ i, I i ∧
+        ∏ i, I i = ⨅ i, I i
+tags:
+- Mathematics
+- Commutative Algebra
+source: J.S. Milne, Algebraic Geometry, p. 14, Theorem 1.1
+mission: algebraic-geometry
+proposer: Sanghyeok0
